@@ -51,7 +51,7 @@ WFC.defineModule = function (id, def) {
 };
 const modTitle = m => (m.title && (m.title[lang] || m.title.en)) ||
   (s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())(m.id.replace(/^\d{2}/, ""));
-const stats = m => m.kind === "warframes" ? { t: m.items.length * 3, d: m.items.reduce((n, f) => n + (f.parts || []).filter(p => done[f.key + ":" + p.id]).length, 0) } : { t: m.items.length, d: m.items.filter(i => done[i.key]).length };
+const stats = m => m.kind === "warframes" ? { t: m.items.length, d: m.items.filter(f => (f.parts || []).length === 3 && f.parts.every(p => done[f.key + ":" + p.id])).length } : { t: m.items.length, d: m.items.filter(i => done[i.key]).length };
 const itemDone = (m, i) => m.kind === "warframes" ? (i.parts || []).every(p => done[i.key + ":" + p.id]) : !!done[i.key];
 function totals() {
   return Object.values(WFC.mods).reduce((a, m) => { const s = stats(m); a.t += s.t; a.d += s.d; return a; }, { t: 0, d: 0 });
@@ -155,7 +155,7 @@ function renderWarframesModule(host, id, focusKey) {
   if(focusKey){const focused=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(focused)openFrames.add(focused.id);}
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid"></div><div class="foot">'+esc(t("save"))+'</div>';
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid" class="wf-grid"></div><div class="foot">'+esc(t("save"))+'</div>';
   const grid=host.querySelector("#wfGrid");
   function render(){
     const s=stats(m), p=pct(s.d,s.t), nq=norm(q);
