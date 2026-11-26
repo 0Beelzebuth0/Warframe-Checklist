@@ -25,7 +25,7 @@ function stripWikiHtml(value){
  return String(value||"").replace(/<sup[\s\S]*?<\/sup>/gi," ").replace(/<br\s*\/?>/gi," ").replace(/<\/(?:p|li|div|tr|td|th)>/gi," ").replace(/<[^>]*>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g," ").trim();
 }
 function acquisitionHtmlSection(html){
- const source=String(html||""),heading=/<h2\b[^>]*>[\s\S]*?Acquisition[\s\S]*?<\/h2>/i.exec(source);
+ const source=String(html||""),heading=/<h2\b(?=[^>]*\bid=["']Acquisition["'])[^>]*>[\s\S]*?<\/h2>/i.exec(source);
  if(!heading)return "";
  const start=heading.index+heading[0].length,tail=source.slice(start),next=/<h2\b/i.exec(tail);
  return next?tail.slice(0,next.index):tail;
