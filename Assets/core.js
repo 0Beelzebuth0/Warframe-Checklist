@@ -44,12 +44,15 @@ const save = () => lsSet(K.done, JSON.stringify(done));
 /* ---------- modules ---------- */
 WFC.defineModule = function (id, def) {
   def.id = id;
-  def.items = def.items.map(a => ({ key: id + "|" + a[0] + ":" + a[1], g: a[0], name: a[1], desc: a[2] || "", files: a[3] || [], wiki: a[4] || a[1] }));
+  if (def.kind === "warframes") { def.items = (def.items || []).map(a => ({ ...a, key: id + "|" + a.id, g: "warframes", wiki: a.wiki || a.name })); def.groups = def.groups || [{ id: "warframes", title: { en: "Warframes" } }]; }
+  else def.items = def.items.map(a => ({ key: id + "|" + a[0] + ":" + a[1], g: a[0], name: a[1], desc: a[2] || "", files: a[3] || [], wiki: a[4] || a[1] }));
   WFC.mods[id] = def;
+  if (typeof WFC.refresh === "function") WFC.refresh();
 };
 const modTitle = m => (m.title && (m.title[lang] || m.title.en)) ||
   (s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())(m.id.replace(/^\d{2}/, ""));
-const stats = m => ({ t: m.items.length, d: m.items.filter(i => done[i.key]).length });
+const stats = m => m.kind === "warframes" ? { t: m.items.length * 3, d: m.items.reduce((n, f) => n + (f.parts || []).filter(p => done[f.key + ":" + p.id]).length, 0) } : { t: m.items.length, d: m.items.filter(i => done[i.key]).length };
+const itemDone = (m, i) => m.kind === "warframes" ? (i.parts || []).every(p => done[i.key + ":" + p.id]) : !!done[i.key];
 function totals() {
   return Object.values(WFC.mods).reduce((a, m) => { const s = stats(m); a.t += s.t; a.d += s.d; return a; }, { t: 0, d: 0 });
 }
@@ -137,16 +140,49 @@ function importProgress(file) {
       if (!ok) throw 0;
     } catch (e) { alert(t("impBad")); return; }
     if (!confirm(t("impConf"))) return;
-    done = d.done; save();
+    done = { ...done, ...d.done }; save();
     if (d.lang) { lang = d.lang; lsSet(K.lang, lang); }
     setLang(lang); alert(t("impOk"));
   };
   r.readAsText(file);
 }
 
+
+function renderWarframesModule(host, id, focusKey) {
+  const m=WFC.mods[id]; if(!m)return;
+  let q="", filter="all";
+  document.title=modTitle(m)+" — "+t("siteTitle");
+  const back=WFC.spa?"#":WFC.root+"index.html";
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="wf-status" id="wfStatus"></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid"></div><div class="foot">'+esc(t("save"))+'</div>';
+  const grid=host.querySelector("#wfGrid");
+  function render(){
+    const s=stats(m), p=pct(s.d,s.t), nq=norm(q);
+    host.querySelector("#wfStat").textContent=t("cDone",{d:s.d,t:s.t})+" · "+p+"%";
+    host.querySelector("#wfBar").style.width=p+"%";
+    host.querySelectorAll("[data-wf-filter]").forEach(b=>b.classList.toggle("on",b.dataset.wfFilter===filter));
+    const rows=m.items.filter(f=>{const d=(f.parts||[]).filter(x=>done[f.key+":"+x.id]).length;return (filter==="all"||(filter==="done"&&d===3)||(filter==="pend"&&d<3))&&(!nq||norm(f.name).includes(nq));});
+    grid.innerHTML=rows.map(f=>{
+      const d=f.parts.filter(x=>done[f.key+":"+x.id]).length, fp=Math.round(d/3*100);
+      return '<article class="wf-card" data-wf-id="'+esc(f.id)+'"><div class="wf-head"><img class="wf-image" src="'+esc(f.image||"")+'" alt="'+esc(f.name)+'" loading="lazy"><div class="wf-info"><h2>'+esc(f.name)+'</h2><p>'+esc(f.description||"")+'</p><a class="wiki" href="'+esc(f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a><div class="wf-progress"><span>'+d+'/3 · '+fp+'%</span><div class="bar sm"><i style="width:'+fp+'%"></i></div></div></div></div><div class="wf-parts">'+f.parts.map(part=>{
+        const drops=part.drops||[];
+        const dropHtml=drops.length?drops.map(drop=>'<div class="wf-drop"><span>'+esc(drop.source)+'</span><strong>'+(drop.chance==null?esc(t("wfChanceUnknown")):esc(String(drop.chance).replace(".",",")+"%"))+'</strong>'+(drop.detail?'<small>'+esc(drop.detail)+'</small>':"")+'<a href="'+esc(drop.sourceUrl||f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
+        return '<section class="wf-part"><div class="wf-part-title">'+esc(part.label)+'</div><div class="wf-drops">'+dropHtml+'</div><label class="wf-check"><input type="checkbox" data-part="'+esc(f.key+":"+part.id)+'" '+(done[f.key+":"+part.id]?"checked":"")+'><span>'+esc(t("check"))+'</span></label></section>';
+      }).join("")+'</div></article>';
+    }).join("")||'<p class="subtle">'+esc(t("noRes"))+'</p>';
+    grid.querySelectorAll("input[data-part]").forEach(cb=>cb.onchange=()=>{if(cb.checked)done[cb.dataset.part]=true;else delete done[cb.dataset.part];save();render();});
+  }
+  host.querySelector("#wfSearch").oninput=e=>{q=e.target.value;render();};
+  host.querySelectorAll("[data-wf-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.wfFilter;render();});
+  render();
+  if(m.updatedAt)host.querySelector("#wfStatus").textContent=t("wfUpdated",{date:new Date(m.updatedAt).toLocaleString(lang)})+(m.status==="fallback"?" · "+t("wfOfflineFallback"):"");
+  else host.querySelector("#wfStatus").textContent=m.status==="unavailable"?t("wfUnavailable"):m.status==="cached"?t("wfUsingCache"):t("wfLoading");
+  if(focusKey){const target=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(target)setTimeout(()=>host.querySelector('[data-wf-id="'+CSS.escape(target.id)+'"]')?.scrollIntoView({block:"center"}),100);}
+}
+
 /* ---------- Module view ---------- */
 function renderModule(host, id, focusKey) {
   const m = WFC.mods[id]; if (!m) return;
+  if (m.kind === "warframes") return renderWarframesModule(host, id, focusKey);
   let q = "";
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
@@ -346,7 +382,7 @@ function renderLobby(host) {
     mods.forEach(m => m.items.forEach(i => { if (norm(i.name).includes(q) || norm(i.wiki).includes(q)) hits.push([m, i]); }));
     gr.innerHTML = hits.length ? hits.slice(0, 30).map(([m, i]) => {
       const g = (m.groups || []).find(x => x.id === i.g);
-      return `<a class="res" href="#m=${encodeURIComponent(m.id)}&i=${encodeURIComponent(i.key)}"><span>${done[i.key] ? '<span class="ok">✓</span> ' : ""}${esc(i.name)}</span>
+      return `<a class="res" href="#m=${encodeURIComponent(m.id)}&i=${encodeURIComponent(i.key)}"><span>${itemDone(m, i) ? '<span class="ok">✓</span> ' : ""}${esc(i.name)}</span>
         <small>${esc(t("inMod"))} ${esc(modTitle(m))}${g && g.title ? " · " + esc(g.title[lang] || g.title.en) : ""}</small></a>`;
     }).join("") : `<small class="subtle">${esc(t("noRes"))}</small>`;
   };
@@ -364,6 +400,7 @@ async function discover() {
 }
 WFC.boot = async function (opt) {
   load(); buildTop();
+  WFC.refresh = () => rerender();
   const host = $("#app"); host.textContent = t("loading");
   document.documentElement.lang = lang; $("#sLang").value = lang; applyI18n(); updateTopTitle();
   if (opt.page === "module") {
@@ -372,7 +409,7 @@ WFC.boot = async function (opt) {
   } else {
     WFC.spa = true;
     const files = await discover();
-    await Promise.all(files.map(f => { const id = f.replace(/\.html$/i, ""); return WFC.mods[id] ? 0 : loadScript(`${WFC.root}Content/${id}.js`); }));
+    await Promise.all(files.map(async f => { const id = f.replace(/\.html$/i, ""); if (WFC.mods[id]) return 0; if (id === "02WARFRAMES") await loadScript(`${WFC.root}Content/warframes-data.js`); return loadScript(`${WFC.root}Content/${id}.js`); }));
     const route = () => {
       const h = new URLSearchParams(location.hash.slice(1)), id = h.get("m");
       if (id && WFC.mods[id]) rerender = () => renderModule(host, id, null), renderModule(host, id, h.get("i"));

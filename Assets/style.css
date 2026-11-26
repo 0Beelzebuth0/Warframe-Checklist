@@ -156,3 +156,20 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 /* Mark-all placement: right of the search box and right end of each category filter row */
 .search-row{align-items:center;gap:12px}
 .search-row .mark-all-box,.sec-filters .mark-all-box{margin-left:auto}
+
+/* Warframes component checklist */
+.wf-grid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
+.wf-card{background:linear-gradient(155deg,#182130,#111722);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.wf-head{display:flex;gap:16px;padding:16px;align-items:center}
+.wf-image{width:150px;height:150px;object-fit:contain;background:#0e141d;border-radius:12px;flex:none}
+.wf-info{min-width:0;flex:1}.wf-info h2{margin:0;color:var(--gold);font-size:21px}.wf-info p{color:var(--muted);margin:5px 0 8px}
+.wf-progress{margin-top:12px;display:flex;gap:12px;align-items:center;font-size:13px;color:var(--green)}.wf-progress .bar{flex:1}
+.wf-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
+.wf-part{padding:14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:10px}.wf-part:last-child{border-right:0}
+.wf-part-title{font-weight:800;color:var(--gold);font-size:15px}.wf-drops{display:flex;flex-direction:column;gap:7px;flex:1}
+.wf-drop{display:grid;grid-template-columns:1fr auto;gap:3px 8px;padding:8px;background:#0d131d;border:1px solid #263346;border-radius:8px;font-size:12px}
+.wf-drop strong{color:var(--green)}.wf-drop small,.wf-drop a{grid-column:1/-1;color:var(--muted);font-size:11px}.wf-drop a{color:var(--gold);text-decoration:none}.wf-unknown{color:var(--muted)}
+.wf-check{display:flex;gap:8px;align-items:center;padding-top:8px;border-top:1px solid var(--line);font-size:13px;cursor:pointer}.wf-check input{width:17px;height:17px;accent-color:var(--green)}
+.wf-status{margin-top:8px;color:var(--muted);font-size:12px}
+@media(max-width:760px){.wf-parts{grid-template-columns:1fr}.wf-part{border-right:0;border-bottom:1px solid var(--line)}.wf-part:last-child{border-bottom:0}}
+@media(max-width:480px){.wf-head{align-items:flex-start;flex-direction:column}.wf-image{width:100%;height:170px}}
