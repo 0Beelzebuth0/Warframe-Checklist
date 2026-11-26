@@ -320,3 +320,9 @@ h2.sec{font-size:24px;margin:36px 0 2px}
   .module-grid.v-det .card .art{width:64px;height:64px}
   .wf-grid.v-s{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+
+/* Lobby content completion: compact checkbox-only control in the top-right */
+.mod-check{position:absolute;top:8px;right:8px;z-index:4;margin:0;padding:5px;border:1px solid var(--line);border-radius:7px;background:#0b0e14dd;display:flex;align-items:center;justify-content:center;gap:0;width:27px;height:27px}
+.mod-check span{display:none}
+.mod-check input{width:16px;height:16px;margin:0;cursor:pointer}
+.mod .tag{right:42px}
