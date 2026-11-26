@@ -55,11 +55,14 @@ function parseWikiAcquisition(page,weapon){
  const htmlSection=acquisitionHtmlSection(page?.html),wikitext=String(page?.wikitext||"");
  const result={blueprint:[],parts:new Map(),sectionFound:!!htmlSection||!!acquisitionSection(wikitext)};
  const base=normalizeDropName(weapon.name);
- const add=(key,source,detail,chance=null)=>{
+ const add=(key,source,detail,chance=null,refinementChances=null)=>{
   if(!key||!source)return;
   const target=key==="blueprint"?result.blueprint:(result.parts.get(key)||[]);
-  if(!target.some(x=>x.source===source&&x.detail===detail&&x.chance===chance))
-   target.push({source,chance,detail,sourceUrl:wikiPage(weapon.name)+"#Acquisition"});
+  if(!target.some(x=>x.source===source&&x.detail===detail&&x.chance===chance)){
+   const entry={source,chance,detail,sourceUrl:wikiPage(weapon.name)+"#Acquisition"};
+   if(refinementChances)entry.refinementChances=refinementChances;
+   target.push(entry);
+  }
   if(key!=="blueprint")result.parts.set(key,target);
  };
  const partKeyFor=value=>{
@@ -106,7 +109,8 @@ function parseWikiAcquisition(page,weapon){
      for(const match of cell.matchAll(relicPattern)){
       const rarity=(cells.find(x=>/\b(Common|Uncommon|Rare)\b/i.test(x))||"").match(/Common|Uncommon|Rare/i)?.[0]||"";
       const vault=match[3]==="V"?"Vaulted":match[3]==="B"?"Baro Ki'Teer exclusive":"";
-      add(key,match[1]+" "+match[2]+" Relic",[rarity,vault].filter(Boolean).join(" · "),null);
+      const odds=relicOdds[rarity.toLowerCase()]||null;
+      add(key,match[1]+" "+match[2]+" Relic",[rarity,vault].filter(Boolean).join(" · "),odds?.intact??null,odds);
      }
     });
    }
@@ -117,7 +121,8 @@ function parseWikiAcquisition(page,weapon){
     for(const match of cell.matchAll(relicPattern)){
      const rarity=cell.match(/Common|Uncommon|Rare/i)?.[0]||"";
      const vault=match[3]==="V"?"Vaulted":match[3]==="B"?"Baro Ki'Teer exclusive":"";
-     add(key,match[1]+" "+match[2]+" Relic",[rarity,vault].filter(Boolean).join(" · "),null);
+     const odds=relicOdds[rarity.toLowerCase()]||null;
+     add(key,match[1]+" "+match[2]+" Relic",[rarity,vault].filter(Boolean).join(" · "),odds?.intact??null,odds);
     }
    });
   }
