@@ -10,6 +10,20 @@ async function fetchJson(url){
  if(!r.ok)throw new Error("HTTP "+r.status+" ao consultar "+url);return r.json();
 }
 function wikiUrl(item){return item.wikiaUrl||"https://wiki.warframe.com/w/"+encodeURIComponent(String(item.name||"").replace(/ /g,"_"));}
+
+function unwrap(data,key){const v=data&&data[key];return v&&typeof v==="object"&&!Array.isArray(v)&&key in v?v[key]:v;}
+function chanceNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=100?n:null;}
+function pageUrl(title){return "https://wiki.warframe.com/w/"+encodeURIComponent(String(title||"").trim().replace(/\\s+/g,"_"));}
+function buildDrops(itemName,data){
+ const out=[],seen=new Set();
+ const add=(source,chance,detail="")=>{const n=chanceNumber(chance),key=[source,n,detail].join("|");if(seen.has(key))return;seen.add(key);out.push({source:String(source||"Fonte não identificada"),chance:n,detail:String(detail||""),sourceUrl:pageUrl(String(source).split(" · ").pop())});};
+ for(const entry of unwrap(data,"blueprintLocations")||[]){if(entry&&entry.itemName===itemName)for(const enemy of entry.enemies||[]){const table=chanceNumber(enemy.chance),drop=chanceNumber(enemy.enemyItemDropChance),total=table!==null&&drop!==null?table*drop/100:table;add(enemy.enemyName||"Inimigo",total,[table!==null?"Chance na tabela: "+table+"%":"",drop!==null?"Chance de drop de item: "+drop+"%":"",enemy.rarity||""].filter(Boolean).join(" · "));}}
+ const missions=unwrap(data,"missionRewards")||{};
+ for(const [planet,nodes] of Object.entries(missions))for(const [node,mission] of Object.entries(nodes||{}))for(const [rotation,rewards] of Object.entries(mission&&mission.rewards||{}))for(const reward of Array.isArray(rewards)?rewards:[])if(reward&&reward.itemName===itemName)add(planet+" · "+node,reward.chance,"Rotação "+rotation+(reward.rarity?" · "+reward.rarity:""));
+ for(const relic of unwrap(data,"relics")||[]){const rewards=Array.isArray(relic.rewards)?relic.rewards:Object.values(relic.rewards||{}).flat();for(const reward of rewards)if(reward&&reward.itemName===itemName)add([relic.tier,relic.relicName].filter(Boolean).join(" ")||"Relíquia",reward.chance,"Refinamento "+(relic.state||"não especificado")+(reward.rarity?" · "+reward.rarity:""));}
+ return out;
+}
+
 function variantOf(item){
  const tags=item.tags||[];
  for(const tag of ["Prime","Kuva","Tenet","Prisma","Wraith","Vandal","Dex","Syndicate","Mara","Secura","Telos","Rakta","Sancti","Synoid","Carmine","Ceti","MK1"])if(tags.includes(tag))return tag;
