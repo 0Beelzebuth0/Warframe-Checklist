@@ -22,8 +22,10 @@ function wikiTitle(weapon){
  try{return decodeURIComponent(new URL(raw).pathname.split("/").pop()).replace(/_/g," ");}catch{return weapon.name;}
 }
 function acquisitionSection(wikitext){
- const match=String(wikitext||"").match(/^==\s*Acquisition\s*==([\s\S]*?)(?=^==\s|\s*$)/mi);
- return match?match[1]:"";
+ const source=String(wikitext||""),heading=/^==\s*Acquisition\s*==\s*$/mi.exec(source);
+ if(!heading)return "";
+ const start=heading.index+heading[0].length,tail=source.slice(start),next=/^==\s*[^=]/m.exec(tail);
+ return next?tail.slice(0,next.index):tail;
 }
 function parseWikiAcquisition(wikitext,weapon){
  const section=acquisitionSection(wikitext),result={blueprint:[],parts:new Map()};
