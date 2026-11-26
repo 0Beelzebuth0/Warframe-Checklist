@@ -15,15 +15,18 @@ async function fetchJson(url){
 const wikiPage=n=>"https://wiki.warframe.com/w/"+encodeURIComponent(String(n||"").trim().replace(/\s+/g,"_"));
 function chanceNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=100?n:null;}
 function pageUrl(title){return wikiPage(title);}
+function normalizeDropName(value){
+ return String(value||"").replace(/\\s+Blueprint$/i,"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
+}
 
 function buildDropIndex(data){
  const index=new Map();
  const add=(itemName,source,chance,detail="")=>{
   const n=chanceNumber(chance),label=String(source||"Fonte não identificada");
   const key=[label,n,detail].join("|");
-  const rows=index.get(itemName)||[];
+  const normalized=normalizeDropName(itemName);\n  const rows=index.get(normalized)||[];
   if(!rows.some(x=>x.key===key))rows.push({key,source:label,chance:n,detail:String(detail||""),sourceUrl:pageUrl(label.split(" · ").pop())});
-  index.set(itemName,rows);
+  index.set(normalized,rows);
  };
  for(const entry of data.blueprintLocations||[]){
   for(const enemy of entry.enemies||[]){
@@ -46,7 +49,7 @@ function buildDropIndex(data){
  };
  for(const [key,value] of Object.entries(data))if(key!=="blueprintLocations")scan(value,[key]);
  return itemName=>{
-  const rows=[...(index.get(itemName)||[]),...(index.get(itemName+" Blueprint")||[])];
+  const rows=index.get(normalizeDropName(itemName))||[];
   const seen=new Set();
   return rows.filter(row=>{if(seen.has(row.key))return false;seen.add(row.key);const {key,...data}=row;return true;}).map(({key,...row})=>row);
  };
