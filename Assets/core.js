@@ -263,7 +263,7 @@ function renderWeaponsModule(host, id, focusKey) {
   const categories=[["primary","Primary","Primárias"],["secondary","Secondary","Secundárias"],["melee","Melee","Melee"]];
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wepStat"></span></div><div class="bar"><i id="wepBar"></i></div><div class="wep-category-tabs" id="wepTabs"></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wepSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-completion="all">'+esc(t("fAll"))+'</button><button class="btn" data-completion="done">'+esc(t("fDone"))+'</button><button class="btn" data-completion="pending">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wepMarkAll"><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="vrow module-view-row" id="wepViewRow"></div><div class="wf-grid" id="wepGrid"></div><p class="subtle" id="wepNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><div class="wep-category-tabs" id="wepTabs"></div><span class="stat" id="wepStat"></span></div><div class="bar"><i id="wepBar"></i></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wepSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-completion="all">'+esc(t("fAll"))+'</button><button class="btn" data-completion="done">'+esc(t("fDone"))+'</button><button class="btn" data-completion="pending">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wepMarkAll"><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="vrow module-view-row" id="wepViewRow"></div><div class="wf-grid" id="wepGrid"></div><p class="subtle" id="wepNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
   const grid=host.querySelector("#wepGrid"),tabs=host.querySelector("#wepTabs"),viewRow=host.querySelector("#wepViewRow");
   const items=m.items,cards=new Map();
   const currentItems=()=>items.filter(i=>i.category===category);
@@ -331,71 +331,43 @@ function renderModule(host, id, focusKey) {
   let q = "", view = VIEWS.some(v => v[0] === lsGet(K.view)) ? lsGet(K.view) : "m";
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
-  const groupOpen = {};
-  let journeyOrder = lsGet("wfc.journey.order") || "codex";
+  let activeGroup = groups[0]?.id || "", journeyOrder = lsGet("wfc.journey.order") || "codex";
   const communityQuestOrder = ["Awakening","Vor's Prize","The Teacher","Vox Solaris","Once Awake","Heart of Deimos","The Archwing","The Duviri Paradox","Natah","The Second Dream","The War Within","Rising Tide","Chains of Harrow","Apostasy Prologue","The Sacrifice","Chimera Prologue","Erra","The Maker","Prelude to War","The New War","Whispers in the Walls","The Lotus Eaters","The Hex","The Old Peace","Prologue to Tau","Saya's Vigil","Howl of the Kubrow","Stolen Dreams","The New Strange","The Deadlock Protocol","Call of the Tempestarii","The Glast Gambit","Octavia's Anthem","Sands of Inaros","Hidden Messages","Mask of the Revenant","The Silver Grove","The Waverider","The Limbo Theorem","The Jordas Precept","Patient Zero","A Man of Few Words","Jade Shadows","Jade Shadows: Constellations","Angels of the Zariman","Veilbreaker"];
-  groups.forEach(g => {
-    groupFilters[g.id] = "all";
-    groupOpen[g.id] = false;
-  });
-
-  if (focusKey) {
-    const targetItem = m.items.find(it => it.key === focusKey);
-    if (targetItem) groupOpen[targetItem.g] = true;
-  }
-
+  groups.forEach(g => { groupFilters[g.id] = "all"; });
+  if (focusKey) { const targetItem = m.items.find(it => it.key === focusKey); if (targetItem) activeGroup = targetItem.g; }
   document.title = modTitle(m) + " — " + t("siteTitle");
   const back = WFC.spa ? "#" : WFC.root + "index.html";
-
-  host.innerHTML = `<div class="mhead"><a class="btn" href="${back}">${esc(t("lobby"))}</a><h1>${esc(modTitle(m))}</h1><span class="stat" id="mStat"></span></div>
+  host.innerHTML = `<div class="mhead"><a class="btn" href="${back}">${esc(t("lobby"))}</a><h1>${esc(modTitle(m))}</h1><div class="journey-category-tabs" id="journeyTabs"></div><span class="stat" id="mStat"></span></div>
     <div class="bar"><i id="mBar"></i></div><div class="banner hidden" id="mBan">${esc(t("modDone"))}</div>
-    <div class="tools-block">
-      <div class="search-row wf-tools-row">
-        <input class="search" type="search" placeholder="${esc(t("msearch"))}">
-        <label class="mark-all-box" for="chkMarkAll">
-          <input type="checkbox" id="chkMarkAll" data-ma="*">
-          <span>${esc(t("markAllCb"))}</span>
-        </label>
-      </div>
-    </div><div class="vrow module-view-row" id="moduleViewRow"></div>
-    <div class="cat-list">
-    ${groups.map(g => `<section class="cat-box" data-g="${esc(g.id)}">
-      <button type="button" class="cat-head" aria-expanded="false">
-        <span class="cat-head-left"><span class="cat-arrow">▶</span><h2>${esc(g.title ? (g.title[lang] || g.title.en) : "")}</h2></span>
-        <span class="gs"></span>
-      </button>
-      <div class="cat-body hidden">
-        <div class="sec-filters" data-sg="${esc(g.id)}">
-          <button class="btn" data-sf="all">${esc(t("fAll"))}</button>
-          <button class="btn" data-sf="done">${esc(t("fDone"))}</button>
-          <button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
-          <label class="mark-all-box">
-            <input type="checkbox" data-ma="${esc(g.id)}">
-            <span>${esc(t("markAllCb"))}</span>
-          </label>
-        </div>
-        <div class="grid module-grid v-${view}"></div>
-      </div>
-    </section>`).join("")}
-    </div>`;
-
-  const moduleViewRow = host.querySelector("#moduleViewRow");
+    <div class="tools-block"><div class="search-row wf-tools-row"><input class="search" type="search" placeholder="${esc(t("msearch"))}">
+      <label class="mark-all-box" for="chkMarkAll"><input type="checkbox" id="chkMarkAll" data-ma="*"><span>${esc(t("markAllCb"))}</span></label>
+    </div></div><div class="vrow module-view-row" id="moduleViewRow"></div>
+    <div class="journey-groups" id="journeyGroups">${groups.map(g => `<section class="journey-group" data-g="${esc(g.id)}">
+      <div class="journey-group-head"><h2>${esc(g.title ? (g.title[lang] || g.title.en) : "")}</h2><span class="gs"></span></div>
+      <div class="sec-filters" data-sg="${esc(g.id)}"><button class="btn on" data-sf="all">${esc(t("fAll"))}</button><button class="btn" data-sf="done">${esc(t("fDone"))}</button><button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
+        <label class="mark-all-box"><input type="checkbox" data-ma="${esc(g.id)}"><span>${esc(t("markAllCb"))}</span></label></div><div class="grid module-grid v-${view}"></div>
+    </section>`).join("")}</div>`;
+  const tabs = host.querySelector("#journeyTabs"), moduleViewRow = host.querySelector("#moduleViewRow");
+  const drawTabs = () => { tabs.innerHTML = groups.map(g => {
+    const title = g.title ? (g.title[lang] || g.title.en) : g.id, count = m.items.filter(i => i.g === g.id).length;
+    return '<button class="btn'+(g.id===activeGroup?' on':'')+'" data-group="'+esc(g.id)+'">'+esc(title)+' <small>('+count+')</small></button>';
+  }).join(""); };
   const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k)+" "+esc(t(l)); moduleViewRow.appendChild(b); }); };
+  tabs.onclick = e => { const b=e.target.closest("[data-group]"); if(!b)return; activeGroup=b.dataset.group; drawTabs(); refresh(); };
   moduleViewRow.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); };
-  drawModuleViews();
+  drawTabs(); drawModuleViews();
   if (id === "01JOURNEYS") {
-    const toggle = document.createElement("button");
-    toggle.type = "button"; toggle.className = "btn journey-order-toggle";
+    const toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "btn journey-order-toggle";
     const drawToggle = () => { toggle.textContent = journeyOrder === "community" ? "⇅ Comunidade" : "⇅ Codex"; toggle.setAttribute("aria-pressed", String(journeyOrder === "community")); };
-    drawToggle();
-    host.querySelector(".search-row").insertBefore(toggle, host.querySelector("#chkMarkAll").closest("label"));
+    drawToggle(); host.querySelector(".search-row").insertBefore(toggle, host.querySelector("#chkMarkAll").closest("label"));
     toggle.onclick = () => { journeyOrder = journeyOrder === "codex" ? "community" : "codex"; lsSet("wfc.journey.order", journeyOrder); rerender(); };
   }
-  const cards = [];
-  const displayItems = id === "01JOURNEYS" && journeyOrder === "community" ? [...m.items].sort((a,b) => { const ai=communityQuestOrder.indexOf(a.name), bi=communityQuestOrder.indexOf(b.name); return (ai<0?999:ai)-(bi<0?999:bi) || m.items.indexOf(a)-m.items.indexOf(b); }) : m.items;
+  const cards = [], displayItems = id === "01JOURNEYS" && journeyOrder === "community" ? [...m.items].sort((a,b) => {
+    const ai=communityQuestOrder.indexOf(a.name), bi=communityQuestOrder.indexOf(b.name);
+    return (ai<0?999:ai)-(bi<0?999:bi) || m.items.indexOf(a)-m.items.indexOf(b);
+  }) : m.items;
   displayItems.forEach(it => {
-    const sec = host.querySelector(`section[data-g="${CSS.escape(it.g)}"]`) || host.querySelector("section");
-    const descText = tpl(it.desc).trim();
+    const sec = host.querySelector(`section[data-g="${CSS.escape(it.g)}"]`) || host.querySelector("section.journey-group"), descText = tpl(it.desc).trim();
     const c = document.createElement("article"); c.className = "card"; c.dataset.key = it.key;
     c.innerHTML = `<div class="art"><img></div><div class="body"><h3>${esc(it.name)}</h3>${descText ? `<div class="desc">${esc(descText)}</div>` : ""}
       <div class="row"><button class="chk" aria-pressed="false">${esc(t("check"))}</button><a class="wiki" target="_blank" rel="noopener" href="${wikiPage(it.wiki)}">${esc(t("wiki"))}</a></div></div>`;
@@ -403,91 +375,35 @@ function renderModule(host, id, focusKey) {
     c.querySelector(".chk").onclick = () => { done[it.key] ? delete done[it.key] : (done[it.key] = true); save(); refresh(); };
     sec.querySelector(".grid").appendChild(c); cards.push([it, c]);
   });
-
   const scopeItems = g => (g === "*" ? m.items : m.items.filter(i => i.g === g));
-
   function refresh() {
     const s = stats(m), nq = norm(q);
     cards.forEach(([it, c]) => {
-      const d = !!done[it.key];
-      const sf = groupFilters[it.g] || "all";
-      c.classList.toggle("done", d);
-      c.querySelector(".chk").setAttribute("aria-pressed", d);
-      const matchGroup = (sf === "all") || (sf === "done" && d) || (sf === "pend" && !d);
-      const matchSearch = !nq || norm(it.name).includes(nq);
-      c.classList.toggle("hidden", !(matchGroup && matchSearch));
+      const d = !!done[it.key], sf = groupFilters[it.g] || "all";
+      c.classList.toggle("done", d); c.querySelector(".chk").setAttribute("aria-pressed", d);
+      const matchGroup = sf === "all" || (sf === "done" && d) || (sf === "pend" && !d), matchSearch = !nq || norm(it.name).includes(nq);
+      c.classList.toggle("hidden", !(it.g === activeGroup && matchGroup && matchSearch));
     });
-
-    host.querySelectorAll("section.cat-box").forEach(sec => {
-      const gid = sec.dataset.g;
-      const its = m.items.filter(i => i.g === gid), d = its.filter(i => done[i.key]).length;
-      sec.querySelector(".gs").textContent = t("cDone", { d, t: its.length });
-      const sf = groupFilters[gid] || "all";
-      sec.querySelectorAll("[data-sf]").forEach(b => b.classList.toggle("on", b.dataset.sf === sf));
-
-      // If user searches in module, auto-expand matching categories so results are visible
-      if (nq && sec.querySelector(".card:not(.hidden)")) {
-        groupOpen[gid] = true;
-      }
-
-      const isOpen = !!groupOpen[gid];
-      sec.classList.toggle("open", isOpen);
-      const headBtn = sec.querySelector(".cat-head");
-      const bodyDiv = sec.querySelector(".cat-body");
-      if (headBtn) headBtn.setAttribute("aria-expanded", String(isOpen));
-      if (bodyDiv) bodyDiv.classList.toggle("hidden", !isOpen);
-
-      const hasVisible = !!sec.querySelector(".card:not(.hidden)");
-      sec.classList.toggle("hidden", !hasVisible && sf === "all" && nq !== "");
+    host.querySelectorAll(".journey-group").forEach(sec => {
+      const gid = sec.dataset.g, its = m.items.filter(i => i.g === gid), d = its.filter(i => done[i.key]).length;
+      sec.querySelector(".gs").textContent = t("cDone", { d, t: its.length }); sec.hidden = gid !== activeGroup;
+      sec.querySelectorAll("[data-sf]").forEach(b => b.classList.toggle("on", b.dataset.sf === (groupFilters[gid] || "all")));
     });
-
-    $("#mStat").textContent = t("cDone", { d: s.d, t: s.t });
-    $("#mBar").style.width = pct(s.d, s.t) + "%";
-    $("#mBan").classList.toggle("hidden", !(s.t && s.d === s.t));
-
-    host.querySelectorAll("input[data-ma]").forEach(cb => {
-      const its = scopeItems(cb.dataset.ma), d = its.filter(i => done[i.key]).length;
-      cb.checked = its.length > 0 && d === its.length;
-      cb.indeterminate = d > 0 && d < its.length;
-    });
+    host.querySelector("#mStat").textContent = t("cDone", { d: s.d, t: s.t }); host.querySelector("#mBar").style.width = pct(s.d, s.t) + "%";
+    host.querySelector("#mBan").classList.toggle("hidden", !(s.t && s.d === s.t));
+    host.querySelectorAll("input[data-ma]").forEach(cb => { const its = scopeItems(cb.dataset.ma), d = its.filter(i => done[i.key]).length; cb.checked = its.length > 0 && d === its.length; cb.indeterminate = d > 0 && d < its.length; });
   }
-
-  host.querySelectorAll("section.cat-box").forEach(sec => {
-    const gid = sec.dataset.g;
-    sec.querySelector(".cat-head").onclick = () => {
-      groupOpen[gid] = !groupOpen[gid];
-      refresh();
-    };
-  });
-
-  host.querySelectorAll(".sec-filters").forEach(bar => {
-    const gid = bar.dataset.sg;
-    bar.querySelectorAll("[data-sf]").forEach(b => b.onclick = () => {
-      groupFilters[gid] = b.dataset.sf;
-      refresh();
-    });
-  });
-
+  host.querySelectorAll(".sec-filters").forEach(bar => { const gid = bar.dataset.sg; bar.querySelectorAll("[data-sf]").forEach(b => b.onclick = () => { groupFilters[gid] = b.dataset.sf; refresh(); }); });
   host.querySelector(".search").oninput = e => { q = e.target.value; refresh(); };
-
-  /* "Mark all": always asks for confirmation. Nothing checked -> mark all; anything checked -> unmark all.
-     data-ma="*" is the module-wide box; data-ma="<group id>" only touches that category. */
   host.querySelectorAll("input[data-ma]").forEach(cb => cb.onchange = () => {
     const its = scopeItems(cb.dataset.ma), any = its.some(i => done[i.key]);
-    if (confirm(t(any ? "confUnmarkAll" : "confMarkAll"))) {
-      its.forEach(i => { if (any) delete done[i.key]; else done[i.key] = true; });
-      save();
-    }
-    refresh();                                              // on cancel this restores the real state
+    if (confirm(t(any ? "confUnmarkAll" : "confMarkAll"))) { its.forEach(i => { if (any) delete done[i.key]; else done[i.key] = true; }); save(); }
+    refresh();
   });
-
   refresh();
-  if (focusKey) {
-    const hit = cards.find(([it]) => it.key === focusKey);
-    if (hit) setTimeout(() => { hit[1].scrollIntoView({ block: "center" }); hit[1].classList.add("flash"); }, 150);
-  } else scrollTo(0, 0);
+  if (focusKey) { const hit = cards.find(([it]) => it.key === focusKey); if (hit) setTimeout(() => { hit[1].scrollIntoView({ block: "center" }); hit[1].classList.add("flash"); }, 150); }
+  else scrollTo(0, 0);
 }
-
 /* ---------- Lobby view ---------- */
 const ICO = {
   xl: '<rect x="2" y="2" width="12" height="9" rx="1"/><path d="M6 14h4"/>',
