@@ -81,7 +81,7 @@ function parseWikiAcquisition(page,weapon){
   const n=Number(match[1]);
   return Number.isFinite(n)&&n>=0&&n<=100?n:null;
  };
- const relicPattern=/\b(Lith|Meso|Neo|Axi|Requiem|Omnia)\s+([A-Z]\d+|[IVX]+)\b/gi;
+ const relicPattern=/\b(Lith|Meso|Neo|Axi|Requiem|Omnia)\s+([A-Z]\d+|[IVX]+)\b(?:\s*\(([VB])\))?/gi;
  const tables=[...htmlSection.matchAll(/<table\b[\s\S]*?<\/table>/gi)];
  for(const tableMatch of tables){
   const rows=[...tableMatch[0].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
@@ -105,7 +105,8 @@ function parseWikiAcquisition(page,weapon){
     if(key)cells.forEach(cell=>{
      for(const match of cell.matchAll(relicPattern)){
       const rarity=(cells.find(x=>/\b(Common|Uncommon|Rare)\b/i.test(x))||"").match(/Common|Uncommon|Rare/i)?.[0]||"";
-      add(key,match[1]+" "+match[2]+" Relic",rarity,null);
+      const vault=match[3]==="V"?"Vaulted":match[3]==="B"?"Baro Ki'Teer exclusive":"";
+      add(key,match[1]+" "+match[2]+" Relic",[rarity,vault].filter(Boolean).join(" · "),null);
      }
     });
    }
@@ -115,7 +116,8 @@ function parseWikiAcquisition(page,weapon){
     if(!key||!cell)return;
     for(const match of cell.matchAll(relicPattern)){
      const rarity=cell.match(/Common|Uncommon|Rare/i)?.[0]||"";
-     add(key,match[1]+" "+match[2]+" Relic",rarity,null);
+     const vault=match[3]==="V"?"Vaulted":match[3]==="B"?"Baro Ki'Teer exclusive":"";
+     add(key,match[1]+" "+match[2]+" Relic",[rarity,vault].filter(Boolean).join(" · "),null);
     }
    });
   }
@@ -127,7 +129,7 @@ function parseWikiAcquisition(page,weapon){
  for(const line of listLines){
   if(!line)continue;
   const normalized=normalizeDropName(line);
-  let key=/\bblueprint\b/i.test(line)?"blueprint":knownParts.find(part=>normalized.includes(part))||"";
+  let key=/\bblueprint\b/i.test(line)?"blueprint":knownParts.find(part=>normalized.includes(part))||(/\b(Market|Baro Ki'Teer|Syndicate|Dojo|Research|Quest|mission|bounty|vendor|purchased|purchase|event|enemy|drop)\b/i.test(line)?"blueprint":"");
   if(!key)continue;
   const chanceMatch=line.match(/(\d+(?:[.,]\d+)?)\s*%/);
   const chance=chanceMatch?parseChance(chanceMatch[1]):null;
