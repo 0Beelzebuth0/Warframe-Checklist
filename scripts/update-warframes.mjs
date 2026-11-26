@@ -26,7 +26,7 @@ function asArray(value, label) {
 }
 
 function wikiPageUrl(title) {
-  const page = String(title || "").trim().replace(/\\s+/g, "_");
+  const page = String(title || "").trim().replace(/\s+/g, "_");
   return "https://wiki.warframe.com/w/" + encodeURIComponent(page || "Warframe");
 }
 
