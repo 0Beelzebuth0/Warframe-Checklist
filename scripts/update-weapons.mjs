@@ -15,40 +15,36 @@ async function fetchJson(url){
 const wikiPage=n=>"https://wiki.warframe.com/w/"+encodeURIComponent(String(n||"").trim().replace(/\s+/g,"_"));
 function pageUrl(title){return wikiPage(title);}
 function normalizeDropName(value){
- return String(value||"").replace(/\\s+Blueprint$/i,"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
+ return String(value||"").replace(/\s+Blueprint$/i,"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
 }
 function wikiTitle(weapon){
  const raw=weapon.wikiaUrl||wikiPage(weapon.name);
  try{return decodeURIComponent(new URL(raw).pathname.split("/").pop()).replace(/_/g," ");}catch{return weapon.name;}
 }
 function acquisitionSection(wikitext){
- const match=String(wikitext||"").match(/^==\\s*Acquisition\\s*==([\\s\\S]*?)(?=^==\\s|\\s*$)/mi);
+ const match=String(wikitext||"").match(/^==\s*Acquisition\s*==([\s\S]*?)(?=^==\s|\s*$)/mi);
  return match?match[1]:"";
 }
 function parseWikiAcquisition(wikitext,weapon){
- const section=acquisitionSection(wikitext),base=normalizeDropName(weapon.name);
- const result={blueprint:[],parts:new Map()};
+ const section=acquisitionSection(wikitext),result={blueprint:[],parts:new Map()};
  const add=(key,source,detail)=>{
   const target=key==="blueprint"?result.blueprint:(result.parts.get(key)||[]);
   if(!target.some(x=>x.source===source&&x.detail===detail))target.push({source,chance:null,detail,sourceUrl:wikiPage(weapon.name)});
   if(key!=="blueprint")result.parts.set(key,target);
  };
- const relics=[...section.matchAll(/\\b(Lith|Meso|Neo|Axi)\\s+([A-Z]\\d+)\\s+(Common|Uncommon|Rare)(?:\\s*\\((V|B)\\))?/g)];
- const tables=[...section.matchAll(/\\{\\|[\\s\\S]*?\\|\\}/g)];
+ const tables=[...section.matchAll(/\{\|[\s\S]*?\|\}/g)];
  for(const tableMatch of tables){
-  const table=tableMatch[0],headerLine=table.split(/\\r?\\n/).find(line=>/^!/.test(line.trim()));
+  const table=tableMatch[0],headerLine=table.split(/\r?\n/).find(line=>/^!/.test(line.trim()));
   if(!headerLine)continue;
-  const headers=headerLine.replace(/^!+/,"").split(/!!/).map(x=>x.replace(/<[^>]*>/g,"").replace(/\\[\\[([^|\\]]+)(?:\\|[^\\]]*)?\\]\\]/g,"$1").replace(/'''|''/g,"").trim());
-  const relicTable=/Relic Drops/i.test(table)||headers.some(h=>/Blueprint|Barrel|Receiver|Stock|Link|Handle|Chassis|Blade|Disc|Pouch|String|Grip|Upper Limb|Lower Limb/i.test(h));
-  if(!relicTable)continue;
-  const rows=table.split(/\\r?\\n\\|-/).slice(1);
+  const headers=headerLine.replace(/^!+/,"").split(/!!/).map(x=>x.replace(/<[^>]*>/g,"").replace(/\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g,"$1").replace(/'''|''/g,"").trim());
+  const rows=table.split(/\r?\n\|-/).slice(1);
   for(const row of rows){
-   const cells=row.split(/\\|\\|/).map(c=>c.replace(/^\\s*\\|/,"").replace(/<ref[\\s\\S]*?<\\/ref>/gi,"").trim());
+   const cells=row.split(/\|\|/).map(c=>c.replace(/^\s*\|/,"").replace(/<ref[\s\S]*?<\/ref>/gi,"").replace(/\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g,"$1").trim());
    cells.forEach((cell,index)=>{
     const header=normalizeDropName(headers[index]||"");
     if(!header)return;
     const key=header==="blueprint"||header==="mainblueprint"?"blueprint":header;
-    for(const m of cell.matchAll(/\\b(Lith|Meso|Neo|Axi)\\s+([A-Z]\\d+)\\s+(Common|Uncommon|Rare)(?:\\s*\\((V|B)\\))?/g)){
+    for(const m of cell.matchAll(/\b(Lith|Meso|Neo|Axi)\s+([A-Z]\d+)\s+(Common|Uncommon|Rare)(?:\s*\((V|B)\))?/g)){
      const source=m[1]+" "+m[2]+" Relic";
      const detail=m[3]+(m[4]==="V"?" · Vaulted":m[4]==="B"?" · Baro Ki'Teer exclusive":"");
      add(key,source,detail);
@@ -56,9 +52,8 @@ function parseWikiAcquisition(wikitext,weapon){
    });
   }
  }
- // Some weapons have a direct non-relic blueprint acquisition instead of a relic table.
  if(!result.blueprint.length){
-  const plain=section.replace(/\\{\\|[\\s\\S]*?\\|\\}/g," ").replace(/\\[\\[([^|\\]]+)(?:\\|[^\\]]*)?\\]\\]/g,"$1").replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim();
+  const plain=section.replace(/\{\|[\s\S]*?\|\}/g," ").replace(/\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g,"$1").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
   if(plain&&plain.length<1800)add("blueprint","Weapon Wiki · Acquisition",plain.slice(0,700));
  }
  return result;
@@ -77,6 +72,7 @@ async function fetchWikiPages(weapons){
    }
   }));
  }
+ if(pages.size<Math.min(100,titles.length*0.5))throw new Error("A Wiki não retornou páginas suficientes para validar as aquisições ("+pages.size+"/"+titles.length+").");
  return weapon=>pages.get(normalizeDropName(wikiTitle(weapon)))||"";
 }
 function variantOf(item){
