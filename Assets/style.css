@@ -412,3 +412,69 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .weapon-parts .wf-drops{min-width:0}
 .weapon-parts .wf-drops.has-many{max-height:260px;overflow-y:auto;overscroll-behavior:contain;padding-right:5px}
 @media(max-width:760px){.weapon-parts{grid-template-columns:1fr}.weapon-parts .wf-part{border-right:0;border-bottom:1px solid var(--line)}}
+
+
+/* Responsive audit: keep every module and weapon view inside the viewport. */
+.wf-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr));align-items:stretch}
+.wf-card{min-width:0}
+.wf-head{min-width:0}
+.wf-expander{min-width:0}
+.wf-master-check{align-items:center;padding-top:0}
+.wf-parts{min-width:0;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.wf-part{min-width:0}
+.wf-part-title,.wf-drop,.wf-drops{min-width:0;overflow-wrap:anywhere}
+.wf-grid.v-m{grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr))}
+.wf-grid.v-l{grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr))}
+.wf-grid.v-det{grid-template-columns:1fr;gap:8px}
+.wf-grid.v-det .wf-card{display:flex;flex-direction:column}
+.wf-grid.v-det .wf-head{min-height:0}
+.wf-grid.v-det .wf-expander{gap:12px;padding:9px 12px}
+.wf-grid.v-det .wf-image{width:58px;height:58px}
+.wf-grid.v-det .wf-title strong{font-size:15px}
+.wf-grid.v-det .wf-parts{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.wf-grid.v-tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.wf-grid.v-tiles .wf-card{height:100%}
+.wf-grid.v-tiles .wf-parts{grid-column:1/-1}
+.weapon-card .wf-expander{cursor:pointer}
+.weapon-card .wf-head{min-width:0}
+.weapon-card.expanded{grid-column:1/-1}
+.weapon-parts{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));align-items:stretch}
+.weapon-parts .wf-part{display:flex;flex-direction:column;min-width:0;min-height:100%;padding:14px;border-right:1px solid var(--line);border-bottom:0}
+.weapon-parts .wf-part-title{min-height:52px;overflow-wrap:anywhere}
+.weapon-parts .wf-drops{flex:1;min-width:0}
+.weapon-parts .wf-drops.has-many{max-height:260px;overflow-y:auto;overscroll-behavior:contain;padding-right:5px}
+.wep-category-tabs{width:100%}
+.wep-category-tabs .btn{min-width:0}
+@media(max-width:1000px){
+ .wf-grid.v-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .wf-grid,.wf-grid.v-m,.wf-grid.v-l,.wf-grid.v-det{grid-template-columns:1fr}
+ .wf-grid.v-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .wf-grid .wf-parts,.wf-grid.v-det .wf-parts,.weapon-parts{grid-template-columns:1fr}
+ .wf-grid .wf-part,.weapon-parts .wf-part{border-right:0;border-bottom:1px solid var(--line)}
+ .wf-grid .wf-part:last-child,.weapon-parts .wf-part:last-child{border-bottom:0}
+ .weapon-card .wf-head{min-height:88px}
+ .weapon-parts .wf-part{padding:13px 15px}
+ .wf-tools-row .search{min-width:0;flex:1 1 100%}
+ .wf-tools-row .filter-group{display:flex;flex:1 1 100%}
+ .wf-tools-row .filter-group .btn{flex:1}
+ .wf-tools-row .mark-all-box{margin-left:0}
+}
+@media(max-width:620px){
+ .wf-grid.v-tiles{grid-template-columns:1fr}
+ .wf-grid.v-s{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .wf-grid.v-s .wf-expander{width:100%}
+ .wf-grid.v-s .wf-name-line{max-width:100%}
+ .wf-grid.v-s .wf-name-line strong{overflow-wrap:anywhere}
+ .wep-category-tabs .btn{flex:1 1 calc(33.333% - 8px);padding:8px 10px}
+ .weapon-card .wf-expander{gap:9px;padding:9px}
+ .weapon-card .wf-image{width:68px;height:68px}
+ .weapon-card .wf-master-check{width:42px}
+}
+@media(max-width:380px){
+ .wf-grid.v-s{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .wf-grid.v-s .wf-image{width:54px;height:54px}
+ .wep-category-tabs .btn{font-size:12px;padding:7px 6px}
+ .weapon-card .wf-title strong{font-size:14px}
+}
