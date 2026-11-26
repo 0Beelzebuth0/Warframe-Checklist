@@ -44,7 +44,7 @@ const save = () => lsSet(K.done, JSON.stringify(done));
 /* ---------- modules ---------- */
 WFC.defineModule = function (id, def) {
   def.id = id;
-  if (def.kind === "warframes") { def.items = (def.items || []).map(a => ({ ...a, key: id + "|" + a.id, g: "warframes", wiki: a.wiki || a.name })); def.groups = def.groups || [{ id: "warframes", title: { en: "Warframes" } }]; }
+  if (def.kind === "warframes" || def.kind === "weapons") { def.items = (def.items || []).map(a => ({ ...a, key: id + "|" + a.id, g: a.category || a.g || "items", wiki: a.wiki || a.name })); def.groups = def.groups || [{ id: "items", title: { en: "Items" } }]; }
   else def.items = def.items.map(a => ({ key: id + "|" + a[0] + ":" + a[1], g: a[0], name: a[1], desc: a[2] || "", files: a[3] || [], wiki: a[4] || a[1] }));
   WFC.mods[id] = def;
   if (typeof WFC.refresh === "function") WFC.refresh();
@@ -256,10 +256,66 @@ function renderWarframesModule(host, id, focusKey) {
   render();
 }
 
+
+function renderWeaponsModule(host, id, focusKey) {
+  const m=WFC.mods[id]; if(!m)return;
+  let q="", category="primary", completion="all", view=VIEWS.some(v=>v[0]===lsGet(K.view))?lsGet(K.view):"m", weaponType="all";
+  const categories=[["primary","Primary","Primárias"],["secondary","Secondary","Secundárias"],["melee","Melee","Armas brancas"]];
+  const open=new Set();
+  document.title=modTitle(m)+" — "+t("siteTitle");
+  const back=WFC.spa?"#":WFC.root+"index.html";
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wepStat"></span></div><div class="bar"><i id="wepBar"></i></div><div class="wep-category-tabs" id="wepTabs"></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wepSearch" type="search" placeholder="'+esc(t("msearch"))+'"><select class="wep-type-select" id="wepType"><option value="all">Todos os tipos</option></select><div class="filter-group"><button class="btn on" data-completion="all">'+esc(t("fAll"))+'</button><button class="btn" data-completion="done">'+esc(t("fDone"))+'</button><button class="btn" data-completion="pending">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wepMarkAll"><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="vrow module-view-row" id="wepViewRow"></div><div class="wf-grid" id="wepGrid"></div><p class="subtle" id="wepNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
+  const grid=host.querySelector("#wepGrid"), tabs=host.querySelector("#wepTabs"), typeSelect=host.querySelector("#wepType"), viewRow=host.querySelector("#wepViewRow");
+  const items=m.items, cards=new Map();
+  function currentItems(){return items.filter(i=>i.category===category);}
+  function drawTabs(){tabs.innerHTML=categories.map(([id,en,pt])=>'<button class="btn'+(id===category?' on':'')+'" data-category="'+id+'">'+(lang==="pt"?pt:en)+'</button>').join("");}
+  function drawViews(){viewRow.innerHTML="";VIEWS.forEach(([k,l])=>{const b=document.createElement("button");b.className="btn"+(k===view?" on":"");b.dataset.view=k;b.innerHTML=svg(k)+" "+esc(t(l));viewRow.appendChild(b);});}
+  function drawTypes(){const types=[...new Set(currentItems().map(i=>i.type||"Outros"))].sort((a,b)=>a.localeCompare(b));typeSelect.innerHTML='<option value="all">Todos os tipos</option>'+types.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join("");if(!types.includes(weaponType))weaponType="all";typeSelect.value=weaponType;}
+  function makeCard(item){
+    const c=document.createElement("article");c.className="wf-card weapon-card";c.dataset.weapon=item.id;
+    const image=item.image||"";
+    c.innerHTML='<div class="wf-head"><div class="wf-expander weapon-expander"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count">'+esc(item.type||"")+(item.variant?' · '+esc(item.variant):"")+'</small><span class="bar sm"><i></i></span></span></div><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div>';
+    const img=c.querySelector("img");if(image)img.src=image;else loadImg(img,item.name,[],item.name);img.onerror=()=>{img.classList.add("image-failed");};
+    c.querySelector("[data-weapon]").onchange=e=>{if(e.currentTarget.checked)done[item.key]=true;else delete done[item.key];save();refresh();};
+    cards.set(item.id,c);return c;
+  }
+  items.forEach(i=>grid.appendChild(makeCard(i)));
+  function refresh(){
+    const s=stats(m),p=pct(s.d,s.t),nq=norm(q),scope=currentItems();
+    host.querySelector("#wepStat").textContent=t("cDone",{d:s.d,t:s.t})+" · "+p+"%";
+    host.querySelector("#wepBar").style.width=p+"%";
+    host.querySelectorAll("[data-completion]").forEach(b=>b.classList.toggle("on",b.dataset.completion===completion));
+    let visible=0;
+    items.forEach(i=>{
+      const c=cards.get(i.id),isDone=!!done[i.key];
+      const matches=i.category===category&&(completion==="all"||(completion==="done"&&isDone)||(completion==="pending"&&!isDone))&&(weaponType==="all"||(i.type||"Outros")===weaponType)&&(!nq||norm(i.name).includes(nq));
+      c.hidden=!matches;if(matches)visible++;
+      c.classList.toggle("done",isDone);const cb=c.querySelector("[data-weapon]");cb.checked=isDone;
+      c.querySelector(".wf-count").textContent=(i.type||"Outros")+(i.variant?" · "+i.variant:"")+(i.isPrime?" · PRIME":"");
+      c.querySelector(".wf-title .bar i").style.width=(isDone?100:0)+"%";
+    });
+    host.querySelector("#wepNoResults").hidden=visible>0;
+    const keys=scope.map(i=>i.key),count=keys.filter(k=>done[k]).length,box=host.querySelector("#wepMarkAll");
+    box.checked=keys.length>0&&count===keys.length;box.indeterminate=count>0&&count<keys.length;
+  }
+  tabs.onclick=e=>{const b=e.target.closest("[data-category]");if(!b)return;category=b.dataset.category;weaponType="all";drawTabs();drawTypes();refresh();};
+  viewRow.onclick=e=>{const b=e.target.closest("[data-view]");if(!b)return;view=b.dataset.view;lsSet(K.view,view);grid.className="wf-grid v-"+view;drawViews();};
+  typeSelect.onchange=()=>{weaponType=typeSelect.value;refresh();};
+  host.querySelector("#wepSearch").oninput=e=>{q=e.target.value;refresh();};
+  host.querySelectorAll("[data-completion]").forEach(b=>b.onclick=()=>{completion=b.dataset.completion;refresh();});
+  host.querySelector("#wepMarkAll").onchange=()=>{
+    const keys=currentItems().map(i=>i.key),any=keys.some(k=>done[k]);
+    if(confirm(t(any?"confUnmarkAll":"confMarkAll"))){keys.forEach(k=>{if(any)delete done[k];else done[k]=true;});save();}
+    refresh();
+  };
+  grid.className="wf-grid v-"+view;drawTabs();drawTypes();drawViews();refresh();
+}
+
 /* ---------- Module view ---------- */
 function renderModule(host, id, focusKey) {
   const m = WFC.mods[id]; if (!m) return;
   if (m.kind === "warframes") return renderWarframesModule(host, id, focusKey);
+  if (m.kind === "weapons") return renderWeaponsModule(host, id, focusKey);
   let q = "", view = VIEWS.some(v => v[0] === lsGet(K.view)) ? lsGet(K.view) : "m";
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
@@ -497,7 +553,7 @@ WFC.boot = async function (opt) {
   } else {
     WFC.spa = true;
     const files = await discover();
-    await Promise.all(files.map(async f => { const id = f.replace(/\.html$/i, ""); if (WFC.mods[id]) return 0; if (id === "02WARFRAMES") await loadScript(`${WFC.root}Content/warframes-data.js`); return loadScript(`${WFC.root}Content/${id}.js`); }));
+    await Promise.all(files.map(async f => { const id = f.replace(/\.html$/i, ""); if (WFC.mods[id]) return 0; if (id === "02WARFRAMES") await loadScript(`${WFC.root}Content/warframes-data.js`); if (id === "03WEAPONS") await loadScript(`${WFC.root}Content/weapons-data.js`); return loadScript(`${WFC.root}Content/${id}.js`); }));
     const route = () => {
       const h = new URLSearchParams(location.hash.slice(1)), id = h.get("m");
       if (id && WFC.mods[id]) rerender = () => renderModule(host, id, null), renderModule(host, id, h.get("i"));
