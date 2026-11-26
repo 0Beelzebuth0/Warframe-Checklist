@@ -445,6 +445,13 @@ function renderLobby(host) {
   host.querySelectorAll(".mod").forEach(a => {
     const m = WFC.mods[a.dataset.id], c = m.cover || {};
     loadImg(a.querySelector("img"), modTitle(m), c.files || [], c.page);
+    const scope = m.kind === "warframes" ? m.items.flatMap(f => (f.parts || []).map(p => f.key + ":" + p.id)) : m.items.map(i => i.key);
+    const check = a.querySelector("[data-mod-check]");
+    const checkedCount = scope.filter(k => done[k]).length;
+    check.checked = scope.length > 0 && checkedCount === scope.length; check.indeterminate = checkedCount > 0 && checkedCount < scope.length;
+    check.onclick = e => e.stopPropagation();
+    check.closest("label").onclick = e => e.stopPropagation();
+    check.onchange = () => { const any = scope.some(k => done[k]); if (confirm(t(any ? "confUnmarkAll" : "confMarkAll"))) { scope.forEach(k => { if (any) delete done[k]; else done[k] = true; }); save(); } rerender(); };
   });
   const vr = $("#vRow"), grid = $(".mods");
   const drawView = () => {
