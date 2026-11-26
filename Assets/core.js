@@ -151,9 +151,11 @@ function importProgress(file) {
 function renderWarframesModule(host, id, focusKey) {
   const m=WFC.mods[id]; if(!m)return;
   let q="", filter="all";
+  const openFrames=new Set();
+  if(focusKey){const focused=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(focused)openFrames.add(focused.id);}
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="wf-status" id="wfStatus"></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid"></div><div class="foot">'+esc(t("save"))+'</div>';
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid"></div><div class="foot">'+esc(t("save"))+'</div>';
   const grid=host.querySelector("#wfGrid");
   function render(){
     const s=stats(m), p=pct(s.d,s.t), nq=norm(q);
@@ -162,21 +164,34 @@ function renderWarframesModule(host, id, focusKey) {
     host.querySelectorAll("[data-wf-filter]").forEach(b=>b.classList.toggle("on",b.dataset.wfFilter===filter));
     const rows=m.items.filter(f=>{const d=(f.parts||[]).filter(x=>done[f.key+":"+x.id]).length;return (filter==="all"||(filter==="done"&&d===3)||(filter==="pend"&&d<3))&&(!nq||norm(f.name).includes(nq));});
     grid.innerHTML=rows.map(f=>{
-      const d=f.parts.filter(x=>done[f.key+":"+x.id]).length, fp=Math.round(d/3*100);
-      return '<article class="wf-card" data-wf-id="'+esc(f.id)+'"><div class="wf-head"><img class="wf-image" src="'+esc(f.image||"")+'" alt="'+esc(f.name)+'" loading="lazy"><div class="wf-info"><h2>'+esc(f.name)+'</h2><p>'+esc(f.description||"")+'</p><a class="wiki" href="'+esc(f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a><div class="wf-progress"><span>'+d+'/3 · '+fp+'%</span><div class="bar sm"><i style="width:'+fp+'%"></i></div></div></div></div><div class="wf-parts">'+f.parts.map(part=>{
+      const d=f.parts.filter(x=>done[f.key+":"+x.id]).length, fp=Math.round(d/3*100), isOpen=openFrames.has(f.id);
+      const parts=f.parts.map(part=>{
         const drops=part.drops||[];
         const dropHtml=drops.length?drops.map(drop=>'<div class="wf-drop"><span>'+esc(drop.source)+'</span><strong>'+(drop.chance==null?esc(t("wfChanceUnknown")):esc(String(drop.chance).replace(".",",")+"%"))+'</strong>'+(drop.detail?'<small>'+esc(drop.detail)+'</small>':"")+'<a href="'+esc(drop.sourceUrl||f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
         return '<section class="wf-part"><div class="wf-part-title">'+esc(part.label)+'</div><div class="wf-drops">'+dropHtml+'</div><label class="wf-check"><input type="checkbox" data-part="'+esc(f.key+":"+part.id)+'" '+(done[f.key+":"+part.id]?"checked":"")+'><span>'+esc(t("check"))+'</span></label></section>';
-      }).join("")+'</div></article>';
+      }).join("");
+      return '<article class="wf-card'+(d===3?' done':'')+(isOpen?' expanded':'')+'" data-wf-id="'+esc(f.id)+'"><div class="wf-head"><button type="button" class="wf-expander" data-expand="'+esc(f.id)+'" aria-expanded="'+isOpen+'"><img class="wf-image" src="'+esc(f.image||"")+'" alt="'+esc(f.name)+'" loading="lazy"><span class="wf-title"><strong>'+esc(f.name)+'</strong><small>'+d+'/3 · '+fp+'%</small><span class="bar sm"><i style="width:'+fp+'%"></i></span></span><span class="wf-chevron" aria-hidden="true">›</span></button><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-frame="'+esc(f.id)+'" '+(d===3?"checked":"")+' aria-label="'+esc(t("check"))+' '+esc(f.name)+'"><span></span></label></div><div class="wf-parts"'+(isOpen?'':' hidden')+'><div class="wf-detail-top"><a class="wiki" href="'+esc(f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a></div>'+parts+'</div></article>';
     }).join("")||'<p class="subtle">'+esc(t("noRes"))+'</p>';
-    grid.querySelectorAll("input[data-part]").forEach(cb=>cb.onchange=()=>{if(cb.checked)done[cb.dataset.part]=true;else delete done[cb.dataset.part];save();render();});
+    grid.querySelectorAll("[data-expand]").forEach(btn=>btn.onclick=()=>{
+      const key=btn.dataset.expand;
+      if(openFrames.has(key))openFrames.delete(key);else openFrames.add(key);
+      const card=btn.closest(".wf-card"), body=card.querySelector(".wf-parts"), opened=openFrames.has(key);
+      body.hidden=!opened;btn.setAttribute("aria-expanded",String(opened));card.classList.toggle("expanded",opened);
+    });
+    grid.querySelectorAll("input[data-frame]").forEach(cb=>cb.onchange=()=>{
+      const f=m.items.find(x=>x.id===cb.dataset.frame);if(!f)return;
+      f.parts.forEach(part=>{const key=f.key+":"+part.id;if(cb.checked)done[key]=true;else delete done[key];});
+      save();render();
+    });
+    grid.querySelectorAll("input[data-part]").forEach(cb=>cb.onchange=()=>{
+      if(cb.checked)done[cb.dataset.part]=true;else delete done[cb.dataset.part];
+      save();render();
+    });
+    if(focusKey){const target=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(target)openFrames.add(target.id);}
   }
   host.querySelector("#wfSearch").oninput=e=>{q=e.target.value;render();};
   host.querySelectorAll("[data-wf-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.wfFilter;render();});
   render();
-  if(m.updatedAt)host.querySelector("#wfStatus").textContent=t("wfUpdated",{date:new Date(m.updatedAt).toLocaleString(lang)})+(m.status==="fallback"?" · "+t("wfOfflineFallback"):"");
-  else host.querySelector("#wfStatus").textContent=m.status==="unavailable"?t("wfUnavailable"):m.status==="cached"?t("wfUsingCache"):t("wfLoading");
-  if(focusKey){const target=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(target)setTimeout(()=>host.querySelector('[data-wf-id="'+CSS.escape(target.id)+'"]')?.scrollIntoView({block:"center"}),100);}
 }
 
 /* ---------- Module view ---------- */

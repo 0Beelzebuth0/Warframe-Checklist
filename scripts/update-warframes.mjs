@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const WARFRAMES_URL = "https://raw.githubusercontent.com/WFCD/warframe-items/master/data/json/Warframes.json";
-const DROPS_URL = "https://drops.warframestat.us/data/all.json";
-const OFFICIAL_TABLES = "https://www.warframe.com/droptables";
+const DROPS_URL = "https://raw.githubusercontent.com/WFCD/warframe-drop-data/main/data/all.json";
+const DROP_DATA_SOURCE = "WFCD parsed data from Digital Extremes official drop tables";
 const EXCLUDED = new Set(["Excalibur Prime"]);
 const PARTS = [
   ["neuroptics", "Neuroptics"],
@@ -23,6 +23,11 @@ async function fetchJson(url) {
 function asArray(value, label) {
   if (!Array.isArray(value)) throw new Error("Formato inesperado: " + label + " não é uma lista.");
   return value;
+}
+
+function wikiPageUrl(title) {
+  const page = String(title || "").trim().replace(/\s+/g, "_");
+  return "https://wiki.warframe.com/w/" + encodeURIComponent(page || "Warframe");
 }
 
 function asNumber(value) {
@@ -48,7 +53,7 @@ function buildDrops(itemName, data) {
       source: String(source || "Fonte não identificada"),
       chance: normalizedChance,
       detail: String(detail || ""),
-      sourceUrl: OFFICIAL_TABLES
+      sourceUrl: wikiPageUrl(String(source).split(" · ").pop())
     });
   };
 
@@ -178,7 +183,7 @@ async function main() {
       name: frame.name,
       description: frame.description || "",
       image,
-      wikiUrl: frame.wikiaUrl || "https://wiki.warframe.com/w/" + encodeURIComponent(frame.name.replace(/ /g, "_")),
+      wikiUrl: wikiPageUrl(frame.name),
       parts,
       isPrime: !!frame.isPrime
     });
@@ -195,8 +200,8 @@ async function main() {
   const data = {
     items,
     updatedAt: new Date().toISOString(),
-    source: "WFCD Warframe Items + WFCD parser of Digital Extremes official drop tables",
-    sourceUrl: OFFICIAL_TABLES
+    source: "WFCD Warframe Items + " + DROP_DATA_SOURCE,
+    sourceUrl: "https://github.com/WFCD/warframe-drop-data"
   };
 
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
