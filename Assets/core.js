@@ -165,7 +165,7 @@ function renderWarframesModule(host, id, focusKey) {
   if(focusKey){const focused=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(focused)openFrames.add(focused.id);}
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid"></div><div class="foot">'+esc(t("save"))+'</div>';
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid"></div><p class="subtle" id="wfNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
   const grid=host.querySelector("#wfGrid");
   const cards=new Map();
   function makeCard(f) {
@@ -222,13 +222,18 @@ function renderWarframesModule(host, id, focusKey) {
     host.querySelector("#wfStat").textContent=t("cDone",{d:s.d,t:s.t})+" · "+p+"%";
     host.querySelector("#wfBar").style.width=p+"%";
     host.querySelectorAll("[data-wf-filter]").forEach(b=>b.classList.toggle("on",b.dataset.wfFilter===filter));
+    let visible=0;
     m.items.forEach(f=>{
       const card=cards.get(f.id);
       const d=(f.parts||[]).filter(part=>done[f.key+":"+part.id]).length;
       const matches=(filter==="all"||(filter==="done"&&d===3)||(filter==="pend"&&d<3))&&(!nq||norm(f.name).includes(nq));
       card.hidden=!matches;
+      if(matches)visible++;
       updateCard(f,card);
     });
+    const empty=host.querySelector("#wfNoResults");
+    empty.hidden=visible>0;
+    empty.textContent=t("noRes");
   }
   host.querySelector("#wfSearch").oninput=e=>{q=e.target.value;render();};
   host.querySelectorAll("[data-wf-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.wfFilter;render();});
