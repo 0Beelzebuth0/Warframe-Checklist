@@ -183,7 +183,8 @@ async function main() {
   }
 
   const frames = normalizeWarframes(rawFrames);
-  const wikiImages = await wikiThumbnails(frames.filter(frame => frame?.type === "Warframe").map(frame => frame.name));
+  const wikiImageTitles = frames.filter(frame => frame?.type === "Warframe").flatMap(frame => [frame.name, ...PARTS.map(([, label]) => frame.name + " " + label + " Blueprint")]);
+  const wikiImages = await wikiThumbnails(wikiImageTitles);
   const items = [];
 
   for (const frame of frames) {
@@ -192,7 +193,7 @@ async function main() {
 
     const parts = PARTS.map(([id, label]) => {
       const itemName = frame.name + " " + label + " Blueprint";
-      return { id, label, drops: buildDrops(itemName, drops) };
+      return { id, label, image: wikiImages.get((frame.name + " " + label + " Blueprint").toLowerCase()) || "", drops: buildDrops(itemName, drops) };
     });
 
     // Warframes Prime só entram quando pelo menos uma peça tem uma fonte de obtenção atual.
