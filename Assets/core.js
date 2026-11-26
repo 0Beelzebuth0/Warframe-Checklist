@@ -270,7 +270,12 @@ function renderWeaponsModule(host, id, focusKey) {
   function drawTabs(){tabs.innerHTML=categories.map(([id,en,pt])=>'<button class="btn'+(id===category?' on':'')+'" data-category="'+id+'">'+(lang==="pt"?pt:en)+'</button>').join("");}
   function drawViews(){viewRow.innerHTML="";VIEWS.forEach(([k,l])=>{const b=document.createElement("button");b.className="btn"+(k===view?" on":"");b.dataset.view=k;b.innerHTML=svg(k)+" "+esc(t(l));viewRow.appendChild(b);});}
   function dropRows(drops,weaponName){
-    return Array.isArray(drops)&&drops.length?drops.map(d=>'<div class="wf-drop"><span>'+esc(d.source||"Fonte não identificada")+'</span><strong>'+(d.chance==null?esc(t("wfChanceUnknown")):esc(String(d.chance).replace(".",",")+"%"))+'</strong>'+(d.detail?'<small>'+esc(d.detail)+'</small>':"")+'<a href="'+esc(d.sourceUrl||wikiPage(weaponName))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
+    return Array.isArray(drops)&&drops.length?drops.map(d=>{
+      const odds=d.refinementChances||null;
+      const chanceLabel=odds?"Intact "+odds.intact+"%":(d.chance==null?t("wfChanceUnknown"):String(d.chance).replace(".",",")+"%");
+      const refinementLabel=odds?["exceptional","flawless","radiant"].map(k=>k.charAt(0).toUpperCase()+k.slice(1)+" "+odds[k]+"%").join(" · "):"";
+      return '<div class="wf-drop"><span>'+esc(d.source||"Fonte não identificada")+'</span><strong>'+esc(chanceLabel)+'</strong>'+(d.detail?'<small>'+esc(d.detail)+'</small>':"")+(refinementLabel?'<small>'+esc(refinementLabel)+'</small>':"")+'<a href="'+esc(d.sourceUrl||wikiPage(weaponName))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>';
+    }).join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
   }
   function makeCard(item){
     const c=document.createElement("article");c.className="wf-card weapon-card";c.dataset.weapon=item.id;
