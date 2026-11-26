@@ -36,7 +36,7 @@ function buildDropIndex(data){
   if(Array.isArray(node)){for(const value of node)scan(value,pathParts);return;}
   if(!node||typeof node!=="object")return;
   if(node.itemName&&node.chance!==undefined){
-   const label=pathParts.filter(x=>typeof x==="string"&&!/^\\d+$/.test(x)&&!["rewards","reward","blueprintLocations"].includes(x)).slice(1).join(" · ")||"Tabela de recompensas";
+   const label=pathParts.filter(x=>typeof x==="string"&&!/^\d+$/.test(x)&&!["rewards","reward","blueprintLocations"].includes(x)).slice(1).join(" · ")||"Tabela de recompensas";
    add(node.itemName,label,node.chance,[node.rarity||"",node.tier||"",node.state||""].filter(Boolean).join(" · "));
   }
   for(const [key,value] of Object.entries(node)){
