@@ -51,7 +51,9 @@ async function main(){
     type:w.type||w.productCategory||"Outros",
     variant:variantOf(w),isPrime:!!w.isPrime,
     image:w.wikiaThumbnail|| (w.imageName?"https://cdn.warframestat.us/img/"+encodeURIComponent(w.imageName):""),
-    wikiUrl:wikiUrl(w),description:w.description||""
+    wikiUrl:wikiUrl(w),description:w.description||"",
+    drops:buildDrops(w.name+" Blueprint",drops),
+    parts:(w.components||[]).filter(c=>c&&c.name).map(c=>({name:c.name,count:c.itemCount||1,drops:buildDrops(c.name+" Blueprint",drops)}))
    });
   }
  }
@@ -60,7 +62,7 @@ async function main(){
  const counts=Object.fromEntries(CATEGORIES.map(([f,c])=>[c,items.filter(i=>i.category===c).length]));
  for(const [,c] of CATEGORIES)if(counts[c]<20)throw new Error("Categoria incompleta: "+c);
  items.sort((a,b)=>a.category.localeCompare(b.category)||a.name.localeCompare(b.name));
- const data={items,counts,updatedAt:new Date().toISOString(),source:"WFCD/warframe-items (game data)",sourceUrl:"https://github.com/WFCD/warframe-items"};
+ const data={items,counts,updatedAt:new Date().toISOString(),source:"WFCD/warframe-items + WFCD parsed official drop tables",sourceUrl:"https://github.com/WFCD/warframe-drop-data"};
  await fs.mkdir(path.dirname(output),{recursive:true});
  await fs.writeFile(output,"/* Gerado automaticamente pelo GitHub Actions. */\nwindow.WFC_WEAPONS_SNAPSHOT="+JSON.stringify(data)+";\n","utf8");
  console.log("Armas validadas:",counts,"Total:",items.length);
