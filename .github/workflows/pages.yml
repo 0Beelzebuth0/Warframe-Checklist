@@ -34,10 +34,12 @@ jobs:
         run: |
           mkdir -p _site
           cp -R Assets Content Languages index.html _site/
+          mkdir -p _site/Content
           touch _site/.nojekyll
 
       - name: Generate and validate Warframe data
         run: node scripts/update-warframes.mjs --output _site/Content/warframes-data.js
+          node scripts/update-weapons.mjs --output _site/Content/weapons-data.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
