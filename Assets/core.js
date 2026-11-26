@@ -174,7 +174,8 @@ function renderWarframesModule(host, id, focusKey) {
   host.querySelector("#wfSearch").oninput=e=>{q=e.target.value;render();};
   host.querySelectorAll("[data-wf-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.wfFilter;render();});
   render();
-  if(m.updatedAt)host.querySelector("#wfStatus").textContent=t("wfUpdated",{date:new Date(m.updatedAt).toLocaleString(lang)});
+  if(m.updatedAt)host.querySelector("#wfStatus").textContent=t("wfUpdated",{date:new Date(m.updatedAt).toLocaleString(lang)})+(m.status==="fallback"?" · "+t("wfOfflineFallback"):"");
+  else host.querySelector("#wfStatus").textContent=m.status==="unavailable"?t("wfUnavailable"):m.status==="cached"?t("wfUsingCache"):t("wfLoading");
   if(focusKey){const target=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(target)setTimeout(()=>host.querySelector('[data-wf-id="'+CSS.escape(target.id)+'"]')?.scrollIntoView({block:"center"}),100);}
 }
 
