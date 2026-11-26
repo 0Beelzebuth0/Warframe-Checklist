@@ -195,6 +195,7 @@ async function main() {
   }
 
   const frames = normalizeWarframes(rawFrames);
+  const wikiImages = await wikiThumbnails(frames.filter(frame => frame?.type === "Warframe").map(frame => frame.name));
 
   const items = [];
 
