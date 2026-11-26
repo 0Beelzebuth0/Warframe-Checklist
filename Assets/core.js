@@ -165,7 +165,7 @@ function renderWarframesModule(host, id, focusKey) {
   if(focusKey){const focused=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(focused)openFrames.add(focused.id);}
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid"></div><p class="subtle" id="wfNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wfMarkAll" data-wf-all><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="wf-grid" id="wfGrid"></div><p class="subtle" id="wfNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
   const grid=host.querySelector("#wfGrid");
   const cards=new Map();
   function makeCard(f) {
@@ -175,7 +175,7 @@ function renderWarframesModule(host, id, focusKey) {
     const parts=(f.parts||[]).map(part=>{
       const drops=part.drops||[];
       const dropHtml=drops.length?drops.map(drop=>'<div class="wf-drop"><span>'+esc(drop.source)+'</span><strong>'+(drop.chance==null?esc(t("wfChanceUnknown")):esc(String(drop.chance).replace(".",",")+"%"))+'</strong>'+(drop.detail?'<small>'+esc(drop.detail)+'</small>':"")+'<a href="'+esc(drop.sourceUrl||f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
-      return '<section class="wf-part" data-part-id="'+esc(part.id)+'"><div class="wf-part-title">'+partIcon(part.id,!!f.isPrime)+'<span>'+esc(part.label)+(f.isPrime?' <small class="wf-prime-tag">PRIME</small>':"")+'</span></div><div class="wf-drops'+(drops.length>3?' has-many':'')+'">'+dropHtml+'</div><label class="wf-check"><input type="checkbox" data-part="'+esc(f.key+":"+part.id)+'"><span>'+esc(t("check"))+'</span></label></section>';
+      return '<section class="wf-part" data-part-id="'+esc(part.id)+'"><div class="wf-part-title">'+(part.image?'<img class="wf-part-image" src="'+esc(part.image)+'" alt="'+esc(part.label)+'" loading="lazy">':'')+'<span>'+esc(part.label)+(f.isPrime?' <small class="wf-prime-tag">PRIME</small>':"")+'</span></div><div class="wf-drops'+(drops.length>3?' has-many':'')+'">'+dropHtml+'</div><label class="wf-check"><input type="checkbox" data-part="'+esc(f.key+":"+part.id)+'"><span>'+esc(t("check"))+'</span></label></section>';
     }).join("");
     card.innerHTML='<div class="wf-head"><button type="button" class="wf-expander" data-expand="'+esc(f.id)+'" aria-expanded="false"><img class="wf-image" alt="'+esc(f.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(f.name)+'</strong><a class="wf-wiki" href="'+esc(f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener" aria-label="'+esc(t("wiki"))+'">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count"></small><span class="bar sm"><i></i></span></span><span class="wf-chevron" aria-hidden="true">›</span></button><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-frame="'+esc(f.id)+'" aria-label="'+esc(t("check"))+' '+esc(f.name)+'"><span></span></label></div><div class="wf-parts" hidden>'+parts+'</div>';
     const img=card.querySelector(".wf-image");
@@ -234,7 +234,18 @@ function renderWarframesModule(host, id, focusKey) {
     const empty=host.querySelector("#wfNoResults");
     empty.hidden=visible>0;
     empty.textContent=t("noRes");
+    const allParts=m.items.flatMap(f=>(f.parts||[]).map(part=>f.key+":"+part.id));
+    const checked=allParts.filter(key=>done[key]).length;
+    const allBox=host.querySelector("#wfMarkAll");
+    if(allBox){allBox.checked=allParts.length>0&&checked===allParts.length;allBox.indeterminate=checked>0&&checked<allParts.length;}
   }
+  const allBox=host.querySelector("#wfMarkAll");
+  if(allBox)allBox.onchange=()=>{
+    const keys=m.items.flatMap(f=>(f.parts||[]).map(part=>f.key+":"+part.id));
+    const any=keys.some(key=>done[key]);
+    if(confirm(t(any?"confUnmarkAll":"confMarkAll"))){keys.forEach(key=>{if(any)delete done[key];else done[key]=true;});save();}
+    render();
+  };
   host.querySelector("#wfSearch").oninput=e=>{q=e.target.value;render();};
   host.querySelectorAll("[data-wf-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.wfFilter;render();});
   render();
