@@ -37,9 +37,9 @@ function acquisitionSection(wikitext){
 function parseWikiAcquisition(page,weapon){
  const htmlSection=acquisitionHtmlSection(page?.html),wikitext=String(page?.wikitext||"");
  const result={blueprint:[],parts:new Map()};
- const add=(key,source,detail)=>{
+ const add=(key,source,detail,chance=null)=>{
   const target=key==="blueprint"?result.blueprint:(result.parts.get(key)||[]);
-  if(!target.some(x=>x.source===source&&x.detail===detail))target.push({source,chance:null,detail,sourceUrl:wikiPage(weapon.name)});
+  if(!target.some(x=>x.source===source&&x.detail===detail))target.push({source,chance,detail,sourceUrl:wikiPage(weapon.name)});
   if(key!=="blueprint")result.parts.set(key,target);
  };
  const tables=[...htmlSection.matchAll(/<table\b[\s\S]*?<\/table>/gi)];
@@ -52,6 +52,15 @@ function parseWikiAcquisition(page,weapon){
    if(th.length){headers=th;continue;}
    const cells=[...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(x=>stripWikiHtml(x[1]));
    if(!headers.length||!cells.length)continue;
+   const headerKeys=headers.map(normalizeDropName),itemCol=headerKeys.findIndex(x=>x==="item"||x==="part"),sourceCol=headerKeys.indexOf("source"),chanceCol=headerKeys.indexOf("chance");
+   if(itemCol>=0&&sourceCol>=0&&chanceCol>=0&&cells[itemCol]&&cells[sourceCol]){
+    const rawItem=cells[itemCol],normalized=normalizeDropName(rawItem),base=normalizeDropName(weapon.name);
+    let partKey=normalized==="blueprint"?"blueprint":(normalized.startsWith(base)?normalized.slice(base.length):normalized);
+    partKey=partKey.replace(/blueprint$/,"");
+    const chanceText=String(cells[chanceCol]||"").replace(/,/g,"."),chanceMatch=chanceText.match(/[0-9]+(?:\.[0-9]+)?/),chance=chanceMatch?Number(chanceMatch[0]):null;
+    const detail=[cells[headerKeys.indexOf("expected")],cells[headerKeys.indexOf("nearlyguaranteed")]].filter(Boolean).join(" · ");
+    if(partKey)add(partKey,cells[sourceCol],detail,chance);
+   }
    cells.forEach((cell,index)=>{
     const header=normalizeDropName(headers[index]||"");
     if(!header)return;
@@ -85,7 +94,7 @@ async function fetchWikiPages(weapons){
    }
   }));
  }
- const templated=[...pages.entries()].filter(([,page])=>/\{\{\s*(?:PrimeTable|RelicTable)\b/i.test(page.wikitext));
+ const templated=[...pages.entries()].filter(([,page])=>{const acq=acquisitionSection(page.wikitext);return /\{\|/.test(acq)||/\{\{\s*(?!BuildAutomatic\b)[^}]+\}\}/i.test(acq);});
  for(let i=0;i<templated.length;i+=6){
   await Promise.all(templated.slice(i,i+6).map(async ([key,page])=>{
    const weaponTitle=titles.find(title=>normalizeDropName(title)===key)||key;
@@ -96,8 +105,6 @@ async function fetchWikiPages(weapons){
   }));
  }
  console.log("Páginas Wiki renderizadas para tabelas de Relíquias:",templated.length);
- const templateCounts={};for(const page of pages.values()){for(const m of acquisitionSection(page.wikitext).matchAll(/\\{\\{\\s*([^|}\\s]+)/g)){templateCounts[m[1]]=(templateCounts[m[1]]||0)+1;}}
- const aeolak=pages.get(normalizeDropName("Aeolak"));console.log("WIKI ACQUISITION TEMPLATES",JSON.stringify(Object.entries(templateCounts).sort((a,b)=>b[1]-a[1]).slice(0,30)));console.log("AEOLAK WIKITEXT",acquisitionSection(aeolak?.wikitext).slice(0,2200));
 
  if(pages.size<Math.min(100,titles.length*0.5))throw new Error("A Wiki não retornou páginas suficientes para validar as aquisições ("+pages.size+"/"+titles.length+").");
  return weapon=>pages.get(normalizeDropName(wikiTitle(weapon)))||{html:"",wikitext:""};
