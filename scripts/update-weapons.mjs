@@ -24,7 +24,8 @@ function buildDropIndex(data){
  const add=(itemName,source,chance,detail="")=>{
   const n=chanceNumber(chance),label=String(source||"Fonte não identificada");
   const key=[label,n,detail].join("|");
-  const normalized=normalizeDropName(itemName);\n  const rows=index.get(normalized)||[];
+  const normalized=normalizeDropName(itemName);
+  const rows=index.get(normalized)||[];
   if(!rows.some(x=>x.key===key))rows.push({key,source:label,chance:n,detail:String(detail||""),sourceUrl:pageUrl(label.split(" · ").pop())});
   index.set(normalized,rows);
  };
