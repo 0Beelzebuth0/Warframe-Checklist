@@ -209,7 +209,13 @@ async function main(){
  const items=[];
  const allRaw=lists.flatMap(([category,raw])=>raw.filter(w=>isMasteryWeapon(w,category)).map(w=>({w,category})));
  const wikiDropLookup=await fetchWikiPages(allRaw.map(x=>x.w));
- const missingAcquisitionPages=[...new Set(allRaw.filter(x=>!wikiDropLookup(x.w).sectionFound).map(x=>wikiTitle(x.w)))];
+ const acquisitionCache=new Map();
+ const wikiAcquisitionFor=weapon=>{
+  const key=normalizeDropName(wikiTitle(weapon));
+  if(!acquisitionCache.has(key))acquisitionCache.set(key,parseWikiAcquisition(wikiDropLookup(weapon),weapon));
+  return acquisitionCache.get(key);
+ };
+ const missingAcquisitionPages=[...new Set(allRaw.filter(x=>!wikiAcquisitionFor(x.w).sectionFound).map(x=>wikiTitle(x.w)))];
  if(missingAcquisitionPages.length)throw new Error("Páginas sem seção Acquisition identificada ("+missingAcquisitionPages.length+"): "+missingAcquisitionPages.slice(0,30).join("; "));
 
  for(const [category,raw] of lists){
@@ -222,7 +228,7 @@ async function main(){
    if(!previous||((w.components||[]).length>(previous.components||[]).length))unique.set(w.name,w);
   }
   for(const w of unique.values()){
-   const wikiAcquisition=parseWikiAcquisition(wikiDropLookup(w),w);
+   const wikiAcquisition=wikiAcquisitionFor(w);
    const parts=(w.components||[]).filter(isWeaponPart).map(c=>{
     const meta=componentMap.get(c.uniqueName)||c,token=String(c.uniqueName||"").split("/").pop();
     const compact=normalizeDropName(w.name),suffix=token.toLowerCase().startsWith(compact)?token.slice(compact.length).replace(/([a-z])([A-Z])/g,"$1 $2").trim():"";
@@ -248,6 +254,6 @@ async function main(){
  await fs.writeFile(output,"/* Gerado automaticamente pelo GitHub Actions. */\nwindow.WFC_WEAPONS_SNAPSHOT="+JSON.stringify(data)+";\n","utf8");
  const allParts=items.flatMap(w=>w.parts||[]);
  console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",allParts.length);
- console.log("Auditoria Acquisition Wiki:",{paginasUnicas:[...new Set(allRaw.map(w=>wikiTitle(w)))].length,paginasComSecaoAcquisition:[...new Set(allRaw.filter(w=>wikiDropLookup(w).sectionFound).map(w=>wikiTitle(w)))].length,paginasComDropDeProjeto:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length,armasSemDropDeProjeto:items.filter(w=>!w.drops.length).map(w=>w.name).slice(0,30),pecasSemDrop:allParts.filter(p=>!p.drops.length).length});
+ console.log("Auditoria Acquisition Wiki:",{paginasUnicas:[...new Set(allRaw.map(w=>wikiTitle(w)))].length,paginasComSecaoAcquisition:[...new Set(allRaw.filter(x=>wikiAcquisitionFor(x.w).sectionFound).map(x=>wikiTitle(x.w)))].length,paginasComDropDeProjeto:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length,armasSemDropDeProjeto:items.filter(w=>!w.drops.length).map(w=>w.name).slice(0,30),pecasSemDrop:allParts.filter(p=>!p.drops.length).length,pecasSemDropLista:items.flatMap(w=>(w.parts||[]).filter(p=>!p.drops.length).map(p=>w.name+" — "+p.name)).slice(0,50)});
 }
 main().catch(e=>{console.error("Geração de armas cancelada:",e);process.exitCode=1;});
