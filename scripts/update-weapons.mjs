@@ -76,7 +76,7 @@ function parseWikiAcquisition(page,weapon){
  };
  const parseChance=value=>{
   const raw=String(value||"").trim().replace(/,/g,".");
-  const match=raw.match(/^(\d+(?:\.\d+)?)\s*%?$/);
+  const match=raw.match(/(\d+(?:\.\d+)?)\s*%/)||raw.match(/^(\d+(?:\.\d+)?)$/);
   if(!match)return null;
   const n=Number(match[1]);
   return Number.isFinite(n)&&n>=0&&n<=100?n:null;
