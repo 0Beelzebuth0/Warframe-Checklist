@@ -3,6 +3,8 @@ name: Deploy Warframe Checklist to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -21,11 +23,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Prepare static site
         run: |
           mkdir -p _site
           cp -R Assets Content Languages index.html _site/
           touch _site/.nojekyll
+
+      - name: Generate and validate Warframe data
+        run: node scripts/update-warframes.mjs --output _site/Content/warframes-data.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
