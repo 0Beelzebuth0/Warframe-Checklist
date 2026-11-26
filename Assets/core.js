@@ -160,13 +160,18 @@ function partIcon(partId, isPrime) {
 }
 function renderWarframesModule(host, id, focusKey) {
   const m=WFC.mods[id]; if(!m)return;
-  let q="", filter="all";
+  let q="", filter="all", view=VIEWS.some(v=>v[0]===lsGet(K.view))?lsGet(K.view):"m";
   const openFrames=new Set();
   if(focusKey){const focused=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(focused)openFrames.add(focused.id);}
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wfMarkAll" data-wf-all><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="wf-grid" id="wfGrid"></div><p class="subtle" id="wfNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wfMarkAll" data-wf-all><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="vrow module-view-row" id="wfViewRow"></div><div class="wf-grid" id="wfGrid"></div><p class="subtle" id="wfNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
   const grid=host.querySelector("#wfGrid");
+  grid.classList.add("v-"+view);
+  const viewRow=host.querySelector("#wfViewRow");
+  const drawViews=()=>{viewRow.innerHTML="";VIEWS.forEach(([k,l])=>{const b=document.createElement("button");b.className="btn"+(k===view?" on":"");b.dataset.view=k;b.setAttribute("aria-pressed",String(k===view));b.innerHTML=svg(k)+" "+esc(t(l));viewRow.appendChild(b);});};
+  viewRow.onclick=e=>{const b=e.target.closest("[data-view]");if(!b)return;view=b.dataset.view;lsSet(K.view,view);grid.className="wf-grid v-"+view;drawViews();};
+  drawViews();
   const cards=new Map();
   function makeCard(f) {
     const card=document.createElement("article");
@@ -255,7 +260,7 @@ function renderWarframesModule(host, id, focusKey) {
 function renderModule(host, id, focusKey) {
   const m = WFC.mods[id]; if (!m) return;
   if (m.kind === "warframes") return renderWarframesModule(host, id, focusKey);
-  let q = "";
+  let q = "", view = VIEWS.some(v => v[0] === lsGet(K.view)) ? lsGet(K.view) : "m";
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
   const groupOpen = {};
@@ -275,14 +280,14 @@ function renderModule(host, id, focusKey) {
   host.innerHTML = `<div class="mhead"><a class="btn" href="${back}">${esc(t("lobby"))}</a><h1>${esc(modTitle(m))}</h1><span class="stat" id="mStat"></span></div>
     <div class="bar"><i id="mBar"></i></div><div class="banner hidden" id="mBan">${esc(t("modDone"))}</div>
     <div class="tools-block">
-      <div class="search-row">
+      <div class="search-row wf-tools-row">
         <input class="search" type="search" placeholder="${esc(t("msearch"))}">
         <label class="mark-all-box" for="chkMarkAll">
           <input type="checkbox" id="chkMarkAll" data-ma="*">
           <span>${esc(t("markAllCb"))}</span>
         </label>
       </div>
-    </div>
+    </div><div class="vrow module-view-row" id="moduleViewRow"></div>
     <div class="cat-list">
     ${groups.map(g => `<section class="cat-box" data-g="${esc(g.id)}">
       <button type="button" class="cat-head" aria-expanded="false">
@@ -299,11 +304,15 @@ function renderModule(host, id, focusKey) {
             <span>${esc(t("markAllCb"))}</span>
           </label>
         </div>
-        <div class="grid"></div>
+        <div class="grid module-grid v-${view}"></div>
       </div>
     </section>`).join("")}
     </div>`;
 
+  const moduleViewRow = host.querySelector("#moduleViewRow");
+  const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k)+" "+esc(t(l)); moduleViewRow.appendChild(b); }); };
+  moduleViewRow.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); };
+  drawModuleViews();
   const cards = [];
   m.items.forEach(it => {
     const sec = host.querySelector(`section[data-g="${CSS.escape(it.g)}"]`) || host.querySelector("section");
@@ -411,7 +420,7 @@ const ICO = {
   tiles: '<rect x="2" y="2" width="4" height="4"/><path d="M8 3h6M8 5h4"/><rect x="2" y="9" width="4" height="4"/><path d="M8 10h6M8 12h4"/>',
   cont: '<rect x="2" y="2" width="3" height="3"/><path d="M7 3.5h7"/><rect x="2" y="7" width="3" height="3"/><path d="M7 8.5h7M2 13h12"/>'
 };
-const VIEWS = [["m", "vM"], ["l", "vL"], ["det", "vDet"], ["tiles", "vTiles"]];
+const VIEWS = [["s", "vS"], ["m", "vM"], ["l", "vL"], ["det", "vDet"], ["tiles", "vTiles"]];
 const svg = k => `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">${ICO[k]}</svg>`;
 function renderLobby(host) {
   document.title = t("siteTitle");
@@ -430,12 +439,19 @@ function renderLobby(host) {
       return `<a class="mod ${full ? "full" : "pending"}" href="#m=${encodeURIComponent(m.id)}" data-id="${esc(m.id)}">
         <div class="img"><img><span class="tag ${full ? "d" : "p"}">${esc(full ? "✓ " + t("badgeDone") : t("badgePend", { n: s.t - s.d }))}</span></div>
         <div class="info"><h3>${esc(modTitle(m))}</h3><div class="meta"><span>${esc(t("cDone", { d: s.d, t: s.t }))}</span><span>${mp}%</span></div>
-        <div class="bar sm"><i style="width:${mp}%"></i></div></div></a>`;
+        <div class="bar sm"><i style="width:${mp}%"></i></div></div><label class="mod-check"><input type="checkbox" data-mod-check="${esc(m.id)}"><span>${esc(t("markAllCb"))}</span></label></a>`;
     }).join("")}</div>
     <div class="foot">${esc(t("save"))}</div>`;
   host.querySelectorAll(".mod").forEach(a => {
     const m = WFC.mods[a.dataset.id], c = m.cover || {};
     loadImg(a.querySelector("img"), modTitle(m), c.files || [], c.page);
+    const scope = m.kind === "warframes" ? m.items.flatMap(f => (f.parts || []).map(p => f.key + ":" + p.id)) : m.items.map(i => i.key);
+    const check = a.querySelector("[data-mod-check]");
+    const checkedCount = scope.filter(k => done[k]).length;
+    check.checked = scope.length > 0 && checkedCount === scope.length; check.indeterminate = checkedCount > 0 && checkedCount < scope.length;
+    check.onclick = e => e.stopPropagation();
+    check.closest("label").onclick = e => e.stopPropagation();
+    check.onchange = () => { const any = scope.some(k => done[k]); if (confirm(t(any ? "confUnmarkAll" : "confMarkAll"))) { scope.forEach(k => { if (any) delete done[k]; else done[k] = true; }); save(); } rerender(); };
   });
   const vr = $("#vRow"), grid = $(".mods");
   const drawView = () => {

@@ -250,3 +250,73 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .wf-mark-all{margin-left:auto;white-space:nowrap}
 .wf-part-image{width:48px;height:48px;object-fit:contain;flex:none;border:1px solid #52657e;border-radius:8px;background:#0e141d;padding:3px}
 @media(max-width:760px){.wf-tools-row .filter-group{width:100%}.wf-mark-all{margin-left:0}}
+
+
+/* Shared module view selector and search layout */
+.module-view-row{margin:12px 0 16px}
+.wf-tools-row{align-items:center;gap:12px;flex-wrap:wrap}
+.wf-tools-row .search{flex:1 1 220px;min-width:180px;max-width:none}
+.wf-tools-row .mark-all-box{margin-left:auto;white-space:nowrap}
+
+/* Lobby: per-content completion checkbox */
+.mod-check{display:flex;align-items:center;gap:8px;padding:9px 13px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.mod-check input{width:16px;height:16px;margin:0;accent-color:var(--green);flex:none}
+.mod-check span{overflow-wrap:anywhere}
+.mod-link{display:flex;flex-direction:column;flex:1;text-decoration:none;color:var(--text);min-width:0}
+.mod .img{width:100%}
+
+/* Shared content view modes for Journey cards */
+.module-grid.v-s{grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px}
+.module-grid.v-s .card .art{height:auto;aspect-ratio:1}
+.module-grid.v-s .card .body{padding:8px;gap:4px}
+.module-grid.v-s .card h3{font-size:12px;text-align:center;overflow-wrap:anywhere}
+.module-grid.v-s .card .desc,.module-grid.v-s .card .row,.module-grid.v-s .card .meta,.module-grid.v-s .card .bar{display:none}
+.module-grid.v-l{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}
+.module-grid.v-l .card .art{height:210px}
+.module-grid.v-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+.module-grid.v-tiles .card .art{height:100px}
+.module-grid.v-det{grid-template-columns:1fr;gap:8px}
+.module-grid.v-det .card{flex-direction:row;align-items:stretch}
+.module-grid.v-det .card .art{width:88px;height:88px;flex:none}
+.module-grid.v-det .card .body{flex-direction:row;align-items:center;gap:12px}
+.module-grid.v-det .card h3{min-width:150px}
+.module-grid.v-det .card .desc{flex:1}
+.module-grid.v-det .card .row{margin:0;flex:none}
+
+/* Warframe cards: small, medium, large, details and block views */
+.wf-grid.v-s{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.wf-grid.v-s .wf-head{min-height:0;flex-direction:column;position:relative}
+.wf-grid.v-s .wf-expander{flex-direction:column;gap:6px;padding:8px}
+.wf-grid.v-s .wf-image{width:58px;height:58px}
+.wf-grid.v-s .wf-title{text-align:center;gap:4px}
+.wf-grid.v-s .wf-title strong{font-size:12px}
+.wf-grid.v-s .wf-name-line{align-items:center}
+.wf-grid.v-s .wf-wiki{font-size:9px;padding:2px 4px}
+.wf-grid.v-s .wf-count{font-size:10px}
+.wf-grid.v-s .wf-title .bar{display:none}
+.wf-grid.v-s .wf-master-check{position:absolute;top:5px;right:5px;width:auto;padding:0;border:0}
+.wf-grid.v-s .wf-master-check input{width:17px;height:17px}
+.wf-grid.v-l{grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:16px}
+.wf-grid.v-l .wf-image{width:120px;height:120px}
+.wf-grid.v-tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.wf-grid.v-tiles .wf-head{min-height:0;flex-direction:column;position:relative}
+.wf-grid.v-tiles .wf-expander{flex-direction:column;gap:8px;padding:12px}
+.wf-grid.v-tiles .wf-image{width:100%;height:110px}
+.wf-grid.v-tiles .wf-title strong{font-size:15px}
+.wf-grid.v-tiles .wf-master-check{position:absolute;top:8px;right:8px;width:auto;padding:0;border:0}
+.wf-grid.v-det{grid-template-columns:1fr;gap:8px}
+.wf-grid.v-det .wf-head{min-height:0}
+.wf-grid.v-det .wf-image{width:58px;height:58px}
+.wf-grid.v-det .wf-expander{gap:12px;padding:8px 12px}
+.wf-grid.v-det .wf-title strong{font-size:15px}
+@media(max-width:760px){
+  .module-grid.v-l,.module-grid.v-tiles{grid-template-columns:1fr}
+  .module-grid.v-det .card .body{flex-wrap:wrap}
+  .module-grid.v-det .card h3{min-width:0}
+  .wf-grid.v-l,.wf-grid.v-tiles{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .module-grid.v-s{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .module-grid.v-det .card .art{width:64px;height:64px}
+  .wf-grid.v-s{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
