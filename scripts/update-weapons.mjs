@@ -59,66 +59,78 @@ function parseWikiAcquisition(page,weapon){
   if(!key||!source)return;
   const target=key==="blueprint"?result.blueprint:(result.parts.get(key)||[]);
   if(!target.some(x=>x.source===source&&x.detail===detail&&x.chance===chance))
-   target.push({source,chance,detail,sourceUrl:wikiPage(weapon.name)});
+   target.push({source,chance,detail,sourceUrl:wikiPage(weapon.name)+"#Acquisition"});
   if(key!=="blueprint")result.parts.set(key,target);
  };
  const partKeyFor=value=>{
-  const normalized=normalizeDropName(value);
+  const raw=String(value||"");
+  if(/\\bblueprint\\b/i.test(raw))return "blueprint";
+  let normalized=normalizeDropName(raw);
   if(!normalized)return "";
-  if(normalized==="blueprint"||normalized==="mainblueprint")return "blueprint";
   let suffix=normalized.startsWith(base)?normalized.slice(base.length):normalized;
   suffix=suffix.replace(/blueprint$/,"");
-  if(!suffix&&normalized.includes("blueprint"))return "blueprint";
+  const aliases={gunchassis:"chassis",weaponchassis:"chassis",mainblueprint:"blueprint",receiver:"receiver",barrel:"barrel",stock:"stock",handle:"handle",blade:"blade",grip:"grip",neuroptics:"neuroptics",systems:"systems",string:"string",upperlimb:"upperlimb",lowerlimb:"lowerlimb",ornament:"ornament",disc:"disc",pouch:"pouch",cartridge:"cartridge",cylinder:"cylinder",rotor:"rotor",stars:"stars",sight:"sight",scope:"scope",hilt:"hilt",guard:"guard",gauntlet:"gauntlet",link:"link"};
+  if(aliases[suffix])return aliases[suffix];
+  if(aliases[normalized])return aliases[normalized];
   return suffix||"";
  };
  const parseChance=value=>{
-  const match=String(value||"").replace(/,/g,".").match(/(\d+(?:\.\d+)?)\s*%?/);
+  const raw=String(value||"").trim().replace(/,/g,".");
+  const match=raw.match(/^(\\d+(?:\\.\\d+)?)\\s*%?$/);
   if(!match)return null;
   const n=Number(match[1]);
   return Number.isFinite(n)&&n>=0&&n<=100?n:null;
  };
- const tables=[...htmlSection.matchAll(/<table\b[\s\S]*?<\/table>/gi)];
+ const relicPattern=/\\b(Lith|Meso|Neo|Axi|Requiem|Omnia)\\s+([A-Z]\\d+|[IVX]+)\\b/gi;
+ const tables=[...htmlSection.matchAll(/<table\\b[\\s\\S]*?<\\/table>/gi)];
  for(const tableMatch of tables){
-  const rows=[...tableMatch[0].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+  const rows=[...tableMatch[0].matchAll(/<tr\\b[^>]*>([\\s\\S]*?)<\\/tr>/gi)];
   let headers=[];
   for(const row of rows){
-   const th=[...row[1].matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map(x=>stripWikiHtml(x[1]));
+   const th=[...row[1].matchAll(/<th\\b[^>]*>([\\s\\S]*?)<\\/th>/gi)].map(x=>stripWikiHtml(x[1]));
    if(th.length){headers=th;continue;}
-   const cells=[...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(x=>stripWikiHtml(x[1]));
-   if(!headers.length||!cells.length)continue;
+   const cells=[...row[1].matchAll(/<td\\b[^>]*>([\\s\\S]*?)<\\/td>/gi)].map(x=>stripWikiHtml(x[1]));
+   if(!cells.length)continue;
    const headerKeys=headers.map(normalizeDropName);
-   const itemCol=headerKeys.findIndex(x=>["item","part","reward"].includes(x));
-   const sourceCol=headerKeys.indexOf("source"),chanceCol=headerKeys.indexOf("chance");
-   if(itemCol>=0&&sourceCol>=0&&chanceCol>=0&&cells[itemCol]&&cells[sourceCol]){
+   const itemCol=headerKeys.findIndex(x=>["item","part","reward","component","blueprint"].includes(x));
+   const sourceCol=headerKeys.findIndex(x=>["source","dropsource","droplocation","location","mission","relic"].includes(x));
+   const chanceCol=headerKeys.findIndex(x=>["chance","dropchance","droprate","probability"].includes(x));
+   if(itemCol>=0&&cells[itemCol]){
     const key=partKeyFor(cells[itemCol]);
-    const detail=[cells[headerKeys.indexOf("expected")],cells[headerKeys.indexOf("nearlyguaranteed")]].filter(Boolean).join(" · ");
-    add(key,cells[sourceCol],detail,parseChance(cells[chanceCol]));
+    if(key&&sourceCol>=0&&cells[sourceCol]){
+     const detail=[cells[headerKeys.indexOf("expected")],cells[headerKeys.indexOf("nearlyguaranteed")]].filter(Boolean).join(" · ");
+     add(key,cells[sourceCol],detail, chanceCol>=0?parseChance(cells[chanceCol]):null);
+    }
+    // Prime-style tables sometimes split the component, relic and rarity into separate cells.
+    if(key)cells.forEach(cell=>{
+     for(const match of cell.matchAll(relicPattern)){
+      const rarity=(cells.find(x=>/\\b(Common|Uncommon|Rare)\\b/i.test(x))||"").match(/Common|Uncommon|Rare/i)?.[0]||"";
+      add(key,match[1]+" "+match[2]+" Relic",rarity,null);
+     }
+    });
    }
-   // Prime relic acquisition tables use the component names as column headers.
+   // Other Prime tables put the component names in the column headings.
    cells.forEach((cell,index)=>{
     const key=partKeyFor(headers[index]||"");
     if(!key||!cell)return;
-    for(const match of cell.matchAll(/\b(Lith|Meso|Neo|Axi)\s+([A-Z]\d+)\s+(Common|Uncommon|Rare)(?:\s*\((V|B)\))?/g)){
-     const source=match[1]+" "+match[2]+" Relic";
-     const detail=match[3]+(match[4]==="V"?" · Vaulted":match[4]==="B"?" · Baro Ki'Teer exclusive":"");
-     add(key,source,detail,null);
+    for(const match of cell.matchAll(relicPattern)){
+     const rarity=cell.match(/Common|Uncommon|Rare/i)?.[0]||"";
+     add(key,match[1]+" "+match[2]+" Relic",rarity,null);
     }
    });
   }
  }
- // Some Acquisition sections use bullet lists rather than tables. Preserve only
- // entries that explicitly identify a blueprint or a named weapon component.
- const knownParts=["barrel","receiver","stock","handle","blade","grip","neuroptics","chassis","systems","string","upperlimb","lowerlimb","ornament","disc","pouch","cartridge","cylinder","rotor","stars","sight","scope","hilt","guard","gauntlet","link","stock"];
- for(const match of htmlSection.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)){
-  const line=stripWikiHtml(match[1]);
+ // Acquisition pages may use lists instead of tables. Keep only explicit item/component lines.
+ const knownParts=["barrel","receiver","stock","handle","blade","grip","neuroptics","chassis","systems","string","upperlimb","lowerlimb","ornament","disc","pouch","cartridge","cylinder","rotor","stars","sight","scope","hilt","guard","gauntlet","link"];
+ const listLines=[...htmlSection.matchAll(/<(?:li|p)\\b[^>]*>([\\s\\S]*?)<\\/(?:li|p)>/gi)].map(match=>stripWikiHtml(match[1]));
+ for(const line of listLines){
   if(!line)continue;
   const normalized=normalizeDropName(line);
-  let key="";
-  if(normalized.includes("blueprint"))key="blueprint";
-  else key=knownParts.find(part=>normalized.includes(part))||"";
+  let key=/\\bblueprint\\b/i.test(line)?"blueprint":knownParts.find(part=>normalized.includes(part))||"";
   if(!key)continue;
-  const chance=parseChance(line);
-  add(key,line,"Acquisition (lista da Wiki)",chance);
+  const chanceMatch=line.match(/(\\d+(?:[.,]\\d+)?)\\s*%/);
+  const chance=chanceMatch?parseChance(chanceMatch[1]):null;
+  add(key,line,"Acquisition (lista/texto da Wiki)",chance);
  }
  return result;
 }
