@@ -260,7 +260,7 @@ function renderWarframesModule(host, id, focusKey) {
 function renderModule(host, id, focusKey) {
   const m = WFC.mods[id]; if (!m) return;
   if (m.kind === "warframes") return renderWarframesModule(host, id, focusKey);
-  let q = "";
+  let q = "", view = VIEWS.some(v => v[0] === lsGet(K.view)) ? lsGet(K.view) : "m";
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
   const groupOpen = {};
@@ -280,14 +280,14 @@ function renderModule(host, id, focusKey) {
   host.innerHTML = `<div class="mhead"><a class="btn" href="${back}">${esc(t("lobby"))}</a><h1>${esc(modTitle(m))}</h1><span class="stat" id="mStat"></span></div>
     <div class="bar"><i id="mBar"></i></div><div class="banner hidden" id="mBan">${esc(t("modDone"))}</div>
     <div class="tools-block">
-      <div class="search-row">
+      <div class="search-row wf-tools-row">
         <input class="search" type="search" placeholder="${esc(t("msearch"))}">
         <label class="mark-all-box" for="chkMarkAll">
           <input type="checkbox" id="chkMarkAll" data-ma="*">
           <span>${esc(t("markAllCb"))}</span>
         </label>
       </div>
-    </div>
+    </div><div class="vrow module-view-row" id="moduleViewRow"></div>
     <div class="cat-list">
     ${groups.map(g => `<section class="cat-box" data-g="${esc(g.id)}">
       <button type="button" class="cat-head" aria-expanded="false">
@@ -304,11 +304,15 @@ function renderModule(host, id, focusKey) {
             <span>${esc(t("markAllCb"))}</span>
           </label>
         </div>
-        <div class="grid"></div>
+        <div class="grid module-grid v-${view}"></div>
       </div>
     </section>`).join("")}
     </div>`;
 
+  const moduleViewRow = host.querySelector("#moduleViewRow");
+  const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k)+" "+esc(t(l)); moduleViewRow.appendChild(b); }); };
+  moduleViewRow.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); };
+  drawModuleViews();
   const cards = [];
   m.items.forEach(it => {
     const sec = host.querySelector(`section[data-g="${CSS.escape(it.g)}"]`) || host.querySelector("section");
