@@ -16,43 +16,41 @@ const wikiPage=n=>"https://wiki.warframe.com/w/"+encodeURIComponent(String(n||""
 function chanceNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=100?n:null;}
 function pageUrl(title){return wikiPage(title);}
 
-function buildDrops(itemName,data){
- const targets=new Set([itemName,itemName+" Blueprint"]);
- const out=[],seen=new Set();
- const add=(source,chance,detail="")=>{
+function buildDropIndex(data){
+ const index=new Map();
+ const add=(itemName,source,chance,detail="")=>{
   const n=chanceNumber(chance),label=String(source||"Fonte não identificada");
-  const key=[label,n,detail].join("|");if(seen.has(key))return;seen.add(key);
-  out.push({source:label,chance:n,detail:String(detail||""),sourceUrl:pageUrl(label.split(" · ").pop())});
+  const key=[label,n,detail].join("|");
+  const rows=index.get(itemName)||[];
+  if(!rows.some(x=>x.key===key))rows.push({key,source:label,chance:n,detail:String(detail||""),sourceUrl:pageUrl(label.split(" · ").pop())});
+  index.set(itemName,rows);
  };
- const blueprints=data.blueprintLocations||[];
- for(const entry of blueprints){
-  if(!targets.has(entry?.itemName))continue;
+ for(const entry of data.blueprintLocations||[]){
   for(const enemy of entry.enemies||[]){
    const table=chanceNumber(enemy.chance),roll=chanceNumber(enemy.enemyBlueprintDropChance);
    const actual=table!==null&&roll!==null?table*roll/100:table;
-   add(enemy.enemyName||"Inimigo",actual,[enemy.rarity||"",table!==null?"Chance na tabela: "+table+"%":"",roll!==null?"Chance de blueprint: "+roll+"%":""].filter(Boolean).join(" · "));
+   add(entry.itemName,enemy.enemyName||"Inimigo",actual,[enemy.rarity||"",table!==null?"Chance na tabela: "+table+"%":"",roll!==null?"Chance de blueprint: "+roll+"%":""].filter(Boolean).join(" · "));
   }
  }
- // Scan mission, relic, bounty, key, and other official drop-table rewards.
  const scan=(node,pathParts=[])=>{
-  if(Array.isArray(node)){for(let i=0;i<node.length;i++)scan(node[i],pathParts);return;}
+  if(Array.isArray(node)){for(const value of node)scan(value,pathParts);return;}
   if(!node||typeof node!=="object")return;
-  if(targets.has(node.itemName)&&node.chance!==undefined){
+  if(node.itemName&&node.chance!==undefined){
    const label=pathParts.filter(x=>typeof x==="string"&&!/^\\d+$/.test(x)&&!["rewards","reward","blueprintLocations"].includes(x)).slice(1).join(" · ")||"Tabela de recompensas";
-   add(label,node.chance,[node.rarity||"",node.tier||"",node.state||""].filter(Boolean).join(" · "));
+   add(node.itemName,label,node.chance,[node.rarity||"",node.tier||"",node.state||""].filter(Boolean).join(" · "));
   }
   for(const [key,value] of Object.entries(node)){
    if(key==="_id"||key==="itemName"||key==="chance"||key==="rarity")continue;
    scan(value,[...pathParts,key]);
   }
  };
- for(const [key,value] of Object.entries(data)){
-  if(key==="blueprintLocations")continue;
-  scan(value,[key]);
- }
- return out;
+ for(const [key,value] of Object.entries(data))if(key!=="blueprintLocations")scan(value,[key]);
+ return itemName=>{
+  const rows=[...(index.get(itemName)||[]),...(index.get(itemName+" Blueprint")||[])];
+  const seen=new Set();
+  return rows.filter(row=>{if(seen.has(row.key))return false;seen.add(row.key);const {key,...data}=row;return true;}).map(({key,...row})=>row);
+ };
 }
-
 function variantOf(item){
  const tags=item.tags||[];
  for(const tag of ["Prime","Kuva","Tenet","Prisma","Wraith","Vandal","Dex","Syndicate","Mara","Secura","Telos","Rakta","Sancti","Synoid","Carmine","Ceti","MK1"])if(tags.includes(tag))return tag;
@@ -84,6 +82,7 @@ async function main(){
  if(!drops||!Array.isArray(drops.blueprintLocations)||!drops.missionRewards||!Array.isArray(drops.relics))throw new Error("Dataset de drops inválido; publicação cancelada.");
  if(!Array.isArray(components))throw new Error("Catálogo de componentes inválido; publicação cancelada.");
  const componentMap=new Map(components.filter(x=>x?.uniqueName).map(x=>[x.uniqueName,x]));
+ const getDrops=buildDropIndex(drops);
  const items=[];
  for(const [category,raw] of lists){
   if(!Array.isArray(raw))throw new Error("Dataset inválido para "+category);
@@ -99,14 +98,14 @@ async function main(){
    const blueprintName=recipe?displayName(componentMap.get(recipe.uniqueName)||recipe):w.name+" Blueprint";
    const parts=(w.components||[]).filter(isWeaponPart).map(c=>{
     const meta=componentMap.get(c.uniqueName)||c,name=displayName(meta);
-    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:meta.wikiaUrl||wikiPage(name),drops:buildDrops(name,drops)};
+    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:meta.wikiaUrl||wikiPage(name),drops:getDrops(name)};
    });
    items.push({
     id:w.uniqueName,name:w.name,category,
     variant:variantOf(w),isPrime:!!w.isPrime,
     image:w.wikiaThumbnail||(w.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(w.imageName):""),
     wikiUrl:w.wikiaUrl||wikiPage(w.name),description:w.description||"",
-    drops:buildDrops(blueprintName,drops),parts
+    drops:getDrops(blueprintName),parts
    });
   }
  }
