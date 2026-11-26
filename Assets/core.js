@@ -56,7 +56,7 @@ const itemDone = (m, i) => m.kind === "warframes" ? (i.parts || []).every(p => d
 function totals() {
   return Object.values(WFC.mods).reduce((a, m) => { const s = stats(m); a.t += s.t; a.d += s.d; return a; }, { t: 0, d: 0 });
 }
-const pct = (d, t) => (t ? Math.round((d / t) * 100) : 0);
+const pct = (d, t) => (t ? Number(((d / t) * 100).toFixed(1)) : 0);
 
 /* ---------- images (Wiki) ---------- */
 const wikiPage = n => "https://wiki.warframe.com/w/" + encodeURIComponent(n.replace(/ /g, "_"));
