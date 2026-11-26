@@ -331,10 +331,10 @@ function renderModule(host, id, focusKey) {
   let q = "", view = VIEWS.some(v => v[0] === lsGet(K.view)) ? lsGet(K.view) : "m";
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
-  let activeGroup = groups[0]?.id || "", journeyOrder = lsGet("wfc.journey.order") || "codex";
+  let activeGroup = groups.some(g => g.id === lsGet("wfc.journey.category")) ? lsGet("wfc.journey.category") : (groups[0]?.id || ""), journeyOrder = lsGet("wfc.journey.order") || "codex";
   const communityQuestOrder = ["Awakening","Vor's Prize","The Teacher","Vox Solaris","Once Awake","Heart of Deimos","The Archwing","The Duviri Paradox","Natah","The Second Dream","The War Within","Rising Tide","Chains of Harrow","Apostasy Prologue","The Sacrifice","Chimera Prologue","Erra","The Maker","Prelude to War","The New War","Whispers in the Walls","The Lotus Eaters","The Hex","The Old Peace","Prologue to Tau","Saya's Vigil","Howl of the Kubrow","Stolen Dreams","The New Strange","The Deadlock Protocol","Call of the Tempestarii","The Glast Gambit","Octavia's Anthem","Sands of Inaros","Hidden Messages","Mask of the Revenant","The Silver Grove","The Waverider","The Limbo Theorem","The Jordas Precept","Patient Zero","A Man of Few Words","Jade Shadows","Jade Shadows: Constellations","Angels of the Zariman","Veilbreaker"];
   groups.forEach(g => { groupFilters[g.id] = "all"; });
-  if (focusKey) { const targetItem = m.items.find(it => it.key === focusKey); if (targetItem) activeGroup = targetItem.g; }
+  if (focusKey) { const targetItem = m.items.find(it => it.key === focusKey); if (targetItem) { activeGroup = targetItem.g; lsSet("wfc.journey.category",activeGroup); } }
   document.title = modTitle(m) + " — " + t("siteTitle");
   const back = WFC.spa ? "#" : WFC.root + "index.html";
   host.innerHTML = `<div class="mhead"><a class="btn" href="${back}">${esc(t("lobby"))}</a><h1>${esc(modTitle(m))}</h1><div class="journey-category-tabs" id="journeyTabs"></div><span class="stat" id="mStat"></span></div>
@@ -353,7 +353,7 @@ function renderModule(host, id, focusKey) {
     return '<button class="btn'+(g.id===activeGroup?' on':'')+'" data-group="'+esc(g.id)+'">'+esc(title)+' <small>('+count+')</small></button>';
   }).join(""); };
   const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k)+" "+esc(t(l)); moduleViewRow.appendChild(b); }); };
-  tabs.onclick = e => { const b=e.target.closest("[data-group]"); if(!b)return; activeGroup=b.dataset.group; drawTabs(); refresh(); };
+  tabs.onclick = e => { const b=e.target.closest("[data-group]"); if(!b)return; activeGroup=b.dataset.group; lsSet("wfc.journey.category",activeGroup); drawTabs(); refresh(); };
   moduleViewRow.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); };
   drawTabs(); drawModuleViews();
   if (id === "01JOURNEYS") {
