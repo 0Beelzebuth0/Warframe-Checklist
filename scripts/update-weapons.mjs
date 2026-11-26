@@ -71,25 +71,25 @@ function parseWikiAcquisition(page,weapon){
   const aliases={gunchassis:"chassis",weaponchassis:"chassis",mainblueprint:"blueprint",receiver:"receiver",barrel:"barrel",stock:"stock",handle:"handle",blade:"blade",grip:"grip",neuroptics:"neuroptics",systems:"systems",string:"string",upperlimb:"upperlimb",lowerlimb:"lowerlimb",ornament:"ornament",disc:"disc",pouch:"pouch",cartridge:"cartridge",cylinder:"cylinder",rotor:"rotor",stars:"stars",sight:"sight",scope:"scope",hilt:"hilt",guard:"guard",gauntlet:"gauntlet",link:"link"};
   if(aliases[suffix])return aliases[suffix];
   if(aliases[normalized])return aliases[normalized];
-  if(!suffix&&/\\bblueprint\\b/i.test(raw))return "blueprint";
+  if(!suffix&&/\bblueprint\b/i.test(raw))return "blueprint";
   return suffix||"";
  };
  const parseChance=value=>{
   const raw=String(value||"").trim().replace(/,/g,".");
-  const match=raw.match(/^(\\d+(?:\\.\\d+)?)\\s*%?$/);
+  const match=raw.match(/^(\d+(?:\.\d+)?)\s*%?$/);
   if(!match)return null;
   const n=Number(match[1]);
   return Number.isFinite(n)&&n>=0&&n<=100?n:null;
  };
- const relicPattern=/\\b(Lith|Meso|Neo|Axi|Requiem|Omnia)\\s+([A-Z]\\d+|[IVX]+)\\b/gi;
- const tables=[...htmlSection.matchAll(/<table\\b[\\s\\S]*?<\\/table>/gi)];
+ const relicPattern=/\b(Lith|Meso|Neo|Axi|Requiem|Omnia)\s+([A-Z]\d+|[IVX]+)\b/gi;
+ const tables=[...htmlSection.matchAll(/<table\b[\s\S]*?<\/table>/gi)];
  for(const tableMatch of tables){
-  const rows=[...tableMatch[0].matchAll(/<tr\\b[^>]*>([\\s\\S]*?)<\\/tr>/gi)];
+  const rows=[...tableMatch[0].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
   let headers=[];
   for(const row of rows){
-   const th=[...row[1].matchAll(/<th\\b[^>]*>([\\s\\S]*?)<\\/th>/gi)].map(x=>stripWikiHtml(x[1]));
+   const th=[...row[1].matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map(x=>stripWikiHtml(x[1]));
    if(th.length){headers=th;continue;}
-   const cells=[...row[1].matchAll(/<td\\b[^>]*>([\\s\\S]*?)<\\/td>/gi)].map(x=>stripWikiHtml(x[1]));
+   const cells=[...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(x=>stripWikiHtml(x[1]));
    if(!cells.length)continue;
    const headerKeys=headers.map(normalizeDropName);
    const itemCol=headerKeys.findIndex(x=>["item","part","reward","component","blueprint"].includes(x));
@@ -104,7 +104,7 @@ function parseWikiAcquisition(page,weapon){
     // Prime-style tables sometimes split the component, relic and rarity into separate cells.
     if(key)cells.forEach(cell=>{
      for(const match of cell.matchAll(relicPattern)){
-      const rarity=(cells.find(x=>/\\b(Common|Uncommon|Rare)\\b/i.test(x))||"").match(/Common|Uncommon|Rare/i)?.[0]||"";
+      const rarity=(cells.find(x=>/\b(Common|Uncommon|Rare)\b/i.test(x))||"").match(/Common|Uncommon|Rare/i)?.[0]||"";
       add(key,match[1]+" "+match[2]+" Relic",rarity,null);
      }
     });
@@ -122,14 +122,14 @@ function parseWikiAcquisition(page,weapon){
  }
  // Acquisition pages may use lists instead of tables. Keep only explicit item/component lines.
  const knownParts=["barrel","receiver","stock","handle","blade","grip","neuroptics","chassis","systems","string","upperlimb","lowerlimb","ornament","disc","pouch","cartridge","cylinder","rotor","stars","sight","scope","hilt","guard","gauntlet","link"];
- const listSource=htmlSection.replace(/<table\\b[\\s\\S]*?<\\/table>/gi," ");
- const listLines=[...listSource.matchAll(/<(?:li|p)\\b[^>]*>([\\s\\S]*?)<\\/(?:li|p)>/gi)].map(match=>stripWikiHtml(match[1]));
+ const listSource=htmlSection.replace(/<table\b[\s\S]*?<\/table>/gi," ");
+ const listLines=[...listSource.matchAll(/<(?:li|p)\b[^>]*>([\s\S]*?)<\/(?:li|p)>/gi)].map(match=>stripWikiHtml(match[1]));
  for(const line of listLines){
   if(!line)continue;
   const normalized=normalizeDropName(line);
-  let key=/\\bblueprint\\b/i.test(line)?"blueprint":knownParts.find(part=>normalized.includes(part))||"";
+  let key=/\bblueprint\b/i.test(line)?"blueprint":knownParts.find(part=>normalized.includes(part))||"";
   if(!key)continue;
-  const chanceMatch=line.match(/(\\d+(?:[.,]\\d+)?)\\s*%/);
+  const chanceMatch=line.match(/(\d+(?:[.,]\d+)?)\s*%/);
   const chance=chanceMatch?parseChance(chanceMatch[1]):null;
   add(key,line,"Acquisition (lista/texto da Wiki)",chance);
  }
@@ -145,7 +145,11 @@ async function fetchWikiPages(weapons){
    const data=await fetchJson(url);
    for(const page of Object.values(data.query?.pages||{})){
     const revision=page.revisions?.[0],wikitext=revision?.slots?.main?.content??revision?.slots?.main?.["*"]??revision?.["*"]??"";
-    pages.set(normalizeDropName(page.title),{html:page.extract||"",wikitext});
+    pages.set(normalizeDropName(page.title),{title:page.title,html:page.extract||"",wikitext});
+   }
+   for(const redirect of data.query?.redirects||[]){
+    const resolved=pages.get(normalizeDropName(redirect.to));
+    if(resolved)pages.set(normalizeDropName(redirect.from),resolved);
    }
   }));
  }
