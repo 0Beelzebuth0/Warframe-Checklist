@@ -320,6 +320,8 @@ function renderModule(host, id, focusKey) {
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
   const groupOpen = {};
+  let journeyOrder = lsGet("wfc.journey.order") || "codex";
+  const communityQuestOrder = ["Awakening","Vor's Prize","The Teacher","Vox Solaris","Once Awake","Heart of Deimos","The Archwing","The Duviri Paradox","Natah","The Second Dream","The War Within","Rising Tide","Chains of Harrow","Apostasy Prologue","The Sacrifice","Chimera Prologue","Erra","The Maker","Prelude to War","The New War","Whispers in the Walls","The Lotus Eaters","The Hex","The Old Peace","Prologue to Tau","Saya's Vigil","Howl of the Kubrow","Stolen Dreams","The New Strange","The Deadlock Protocol","Call of the Tempestarii","The Glast Gambit","Octavia's Anthem","Sands of Inaros","Hidden Messages","Mask of the Revenant","The Silver Grove","The Waverider","The Limbo Theorem","The Jordas Precept","Patient Zero","A Man of Few Words","Jade Shadows","Jade Shadows: Constellations","Angels of the Zariman","Veilbreaker"];
   groups.forEach(g => {
     groupFilters[g.id] = "all";
     groupOpen[g.id] = false;
@@ -369,8 +371,17 @@ function renderModule(host, id, focusKey) {
   const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k)+" "+esc(t(l)); moduleViewRow.appendChild(b); }); };
   moduleViewRow.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); };
   drawModuleViews();
+  if (id === "01JOURNEYS") {
+    const toggle = document.createElement("button");
+    toggle.type = "button"; toggle.className = "btn journey-order-toggle";
+    const drawToggle = () => { toggle.textContent = journeyOrder === "community" ? "⇅ Comunidade" : "⇅ Codex"; toggle.setAttribute("aria-pressed", String(journeyOrder === "community")); };
+    drawToggle();
+    host.querySelector(".search-row").insertBefore(toggle, host.querySelector("#chkMarkAll").closest("label"));
+    toggle.onclick = () => { journeyOrder = journeyOrder === "codex" ? "community" : "codex"; lsSet("wfc.journey.order", journeyOrder); rerender(); };
+  }
   const cards = [];
-  m.items.forEach(it => {
+  const displayItems = id === "01JOURNEYS" && journeyOrder === "community" ? [...m.items].sort((a,b) => { const ai=communityQuestOrder.indexOf(a.name), bi=communityQuestOrder.indexOf(b.name); return (ai<0?999:ai)-(bi<0?999:bi) || m.items.indexOf(a)-m.items.indexOf(b); }) : m.items;
+  displayItems.forEach(it => {
     const sec = host.querySelector(`section[data-g="${CSS.escape(it.g)}"]`) || host.querySelector("section");
     const descText = tpl(it.desc).trim();
     const c = document.createElement("article"); c.className = "card"; c.dataset.key = it.key;
