@@ -171,7 +171,8 @@ async function wikiComponentThumbnails(frames) {
   const normalizeTitle = value => String(value || "").replace(/^File:/i, "").replace(/_/g, " ").replace(/\.[^.]+$/, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const batches = [];
   for (let i = 0; i < frames.length; i += 30) batches.push(frames.slice(i, i + 30));
-  for (const batch of batches) {
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
     const url = "https://wiki.warframe.com/api.php?action=query&format=json&redirects=1&prop=images&imlimit=500&titles=" +
       encodeURIComponent(batch.map(frame => frame.name).join("|"));
     try {
@@ -183,7 +184,7 @@ async function wikiComponentThumbnails(frames) {
       const json = await response.json();
       for (const page of Object.values(json.query?.pages || {})) {
         if (!page.title || !Array.isArray(page.images)) continue;
-        if (i === 0 && page.title.toLowerCase() === "ash") console.log("Wiki page images sample:", page.title, page.images.length, page.images.slice(0, 20).map(image => image.title));
+        if (batchIndex === 0 && page.title.toLowerCase() === "ash") console.log("Wiki page images sample:", page.title, page.images.length, page.images.slice(0, 30).map(image => image.title));
         const frame = batch.find(item => normalizeTitle(item.name) === normalizeTitle(page.title));
         if (!frame) continue;
         for (const [, label] of PARTS) {
