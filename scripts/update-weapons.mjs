@@ -13,52 +13,71 @@ async function fetchJson(url){
  return r.json();
 }
 const wikiPage=n=>"https://wiki.warframe.com/w/"+encodeURIComponent(String(n||"").trim().replace(/\s+/g,"_"));
-function chanceNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=100?n:null;}
 function pageUrl(title){return wikiPage(title);}
 function normalizeDropName(value){
  return String(value||"").replace(/\\s+Blueprint$/i,"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
 }
-
-function buildDropIndex(data){
- const index=new Map();
- const add=(itemName,source,chance,detail="")=>{
-  const n=chanceNumber(chance),label=String(source||"Fonte não identificada");
-  const key=[label,n,detail].join("|");
-  const normalized=normalizeDropName(itemName);
-  const rows=index.get(normalized)||[];
-  if(!rows.some(x=>x.key===key)){
-   const pieces=label.split(" · "),sourceTitle=/^(Lith|Meso|Neo|Axi)\\b/.test(pieces[0])?pieces[0]+" Relic":pieces.length>=3?pieces[1]:pieces[0];
-   rows.push({key,source:label,chance:n,detail:String(detail||""),sourceUrl:pageUrl(sourceTitle)});
-  }
-  index.set(normalized,rows);
+function wikiTitle(weapon){
+ const raw=weapon.wikiaUrl||wikiPage(weapon.name);
+ try{return decodeURIComponent(new URL(raw).pathname.split("/").pop()).replace(/_/g," ");}catch{return weapon.name;}
+}
+function acquisitionSection(wikitext){
+ const match=String(wikitext||"").match(/^==\\s*Acquisition\\s*==([\\s\\S]*?)(?=^==\\s|\\s*$)/mi);
+ return match?match[1]:"";
+}
+function parseWikiAcquisition(wikitext,weapon){
+ const section=acquisitionSection(wikitext),base=normalizeDropName(weapon.name);
+ const result={blueprint:[],parts:new Map()};
+ const add=(key,source,detail)=>{
+  const target=key==="blueprint"?result.blueprint:(result.parts.get(key)||[]);
+  if(!target.some(x=>x.source===source&&x.detail===detail))target.push({source,chance:null,detail,sourceUrl:wikiPage(weapon.name)});
+  if(key!=="blueprint")result.parts.set(key,target);
  };
- for(const entry of data.blueprintLocations||[]){
-  for(const enemy of entry.enemies||[]){
-   const table=chanceNumber(enemy.chance),roll=chanceNumber(enemy.enemyBlueprintDropChance??enemy.enemyItemDropChance);
-   const actual=table!==null&&roll!==null?table*roll/100:table;
-   add(entry.itemName,enemy.enemyName||"Inimigo",actual,[enemy.rarity||"",table!==null?"Chance na tabela: "+table+"%":"",roll!==null?"Chance de blueprint: "+roll+"%":""].filter(Boolean).join(" · "));
+ const relics=[...section.matchAll(/\\b(Lith|Meso|Neo|Axi)\\s+([A-Z]\\d+)\\s+(Common|Uncommon|Rare)(?:\\s*\\((V|B)\\))?/g)];
+ const tables=[...section.matchAll(/\\{\\|[\\s\\S]*?\\|\\}/g)];
+ for(const tableMatch of tables){
+  const table=tableMatch[0],headerLine=table.split(/\\r?\\n/).find(line=>/^!/.test(line.trim()));
+  if(!headerLine)continue;
+  const headers=headerLine.replace(/^!+/,"").split(/!!/).map(x=>x.replace(/<[^>]*>/g,"").replace(/\\[\\[([^|\\]]+)(?:\\|[^\\]]*)?\\]\\]/g,"$1").replace(/'''|''/g,"").trim());
+  const relicTable=/Relic Drops/i.test(table)||headers.some(h=>/Blueprint|Barrel|Receiver|Stock|Link|Handle|Chassis|Blade|Disc|Pouch|String|Grip|Upper Limb|Lower Limb/i.test(h));
+  if(!relicTable)continue;
+  const rows=table.split(/\\r?\\n\\|-/).slice(1);
+  for(const row of rows){
+   const cells=row.split(/\\|\\|/).map(c=>c.replace(/^\\s*\\|/,"").replace(/<ref[\\s\\S]*?<\\/ref>/gi,"").trim());
+   cells.forEach((cell,index)=>{
+    const header=normalizeDropName(headers[index]||"");
+    if(!header)return;
+    const key=header==="blueprint"||header==="mainblueprint"?"blueprint":header;
+    for(const m of cell.matchAll(/\\b(Lith|Meso|Neo|Axi)\\s+([A-Z]\\d+)\\s+(Common|Uncommon|Rare)(?:\\s*\\((V|B)\\))?/g)){
+     const source=m[1]+" "+m[2]+" Relic";
+     const detail=m[3]+(m[4]==="V"?" · Vaulted":m[4]==="B"?" · Baro Ki'Teer exclusive":"");
+     add(key,source,detail);
+    }
+   });
   }
  }
- const scan=(node,pathParts=[])=>{
-  if(Array.isArray(node)){for(const value of node)scan(value,pathParts);return;}
-  if(!node||typeof node!=="object")return;
-  const context=[node.bountyLevel,node.tier&&node.name?node.tier+" "+node.name:null,node.enemyName,node.objectiveName,node.gameMode].filter(Boolean);
-  const currentPath=[...pathParts,...context];
-  if(node.itemName&&node.chance!==undefined){
-   const label=currentPath.filter(x=>typeof x==="string"&&!/^\d+$/.test(x)&&!["rewards","reward","blueprintLocations"].includes(x)).slice(1).join(" · ")||"Tabela de recompensas";
-   add(node.itemName,label,node.chance,[node.rarity||"",node.stage||"",node.state||""].filter(Boolean).join(" · "));
-  }
-  for(const [key,value] of Object.entries(node)){
-   if(key==="_id"||key==="itemName"||key==="chance"||key==="rarity"||context.includes(value))continue;
-   scan(value,[...currentPath,key]);
-  }
- };
- for(const [key,value] of Object.entries(data))if(key!=="blueprintLocations")scan(value,[key]);
- return itemName=>{
-  const rows=index.get(normalizeDropName(itemName))||[];
-  const seen=new Set();
-  return rows.filter(row=>{if(seen.has(row.key))return false;seen.add(row.key);const {key,...data}=row;return true;}).map(({key,...row})=>row);
- };
+ // Some weapons have a direct non-relic blueprint acquisition instead of a relic table.
+ if(!result.blueprint.length){
+  const plain=section.replace(/\\{\\|[\\s\\S]*?\\|\\}/g," ").replace(/\\[\\[([^|\\]]+)(?:\\|[^\\]]*)?\\]\\]/g,"$1").replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim();
+  if(plain&&plain.length<1800)add("blueprint","Weapon Wiki · Acquisition",plain.slice(0,700));
+ }
+ return result;
+}
+async function fetchWikiPages(weapons){
+ const titles=[...new Set(weapons.map(wikiTitle))],pages=new Map(),batches=[];
+ for(let i=0;i<titles.length;i+=35)batches.push(titles.slice(i,i+35));
+ for(let i=0;i<batches.length;i+=3){
+  await Promise.all(batches.slice(i,i+3).map(async batch=>{
+   const query=batch.map(x=>encodeURIComponent(x)).join("%7C");
+   const url="https://wiki.warframe.com/api.php?action=query&format=json&prop=revisions&rvprop=content&rvslots=main&titles="+query;
+   const data=await fetchJson(url);
+   for(const page of Object.values(data.query?.pages||{})){
+    const revision=page.revisions?.[0],content=revision?.slots?.main?.content??revision?.slots?.main?.["*"]??revision?.["*"]??"";
+    pages.set(normalizeDropName(page.title),content);
+   }
+  }));
+ }
+ return weapon=>pages.get(normalizeDropName(wikiTitle(weapon)))||"";
 }
 function variantOf(item){
  const tags=item.tags||[];
@@ -83,16 +102,15 @@ function displayName(component){
 async function main(){
  const arg=process.argv.indexOf("--output"),output=arg>=0?process.argv[arg+1]:"Content/weapons-data.js";
  if(!output)throw new Error("Informe o caminho de saída.");
- const [lists,drops,components]=await Promise.all([
+ const [lists,components]=await Promise.all([
   Promise.all(CATEGORIES.map(async ([file,category])=>[category,await fetchJson(BASE+file+".json")])),
-  fetchJson(DROPS_URL),
   fetchJson(COMPONENTS_URL)
  ]);
- if(!drops||!Array.isArray(drops.blueprintLocations)||!drops.missionRewards||!Array.isArray(drops.relics))throw new Error("Dataset de drops inválido; publicação cancelada.");
  if(!Array.isArray(components))throw new Error("Catálogo de componentes inválido; publicação cancelada.");
  const componentMap=new Map(components.filter(x=>x?.uniqueName).map(x=>[x.uniqueName,x]));
- const getDrops=buildDropIndex(drops);
  const items=[];
+ const allRaw=lists.flatMap(([category,raw])=>raw.filter(w=>isMasteryWeapon(w,category)).map(w=>({w,category})));
+ const wikiDropLookup=await fetchWikiPages(allRaw.map(x=>x.w));
  for(const [category,raw] of lists){
   if(!Array.isArray(raw))throw new Error("Dataset inválido para "+category);
   const selected=raw.filter(w=>isMasteryWeapon(w,category));
@@ -105,18 +123,19 @@ async function main(){
   for(const w of unique.values()){
    const recipe=(w.components||[]).find(c=>String(c.uniqueName||"").includes("/Recipes/Weapons/")&&String(c.uniqueName).endsWith("Blueprint"));
    const blueprintName=recipe?displayName(componentMap.get(recipe.uniqueName)||recipe):w.name+" Blueprint";
+   const wikiAcquisition=parseWikiAcquisition(wikiDropLookup(w),w);
    const parts=(w.components||[]).filter(isWeaponPart).map(c=>{
     const meta=componentMap.get(c.uniqueName)||c,token=String(c.uniqueName||"").split("/").pop();
     const compact=normalizeDropName(w.name),suffix=token.toLowerCase().startsWith(compact)?token.slice(compact.length).replace(/([a-z])([A-Z])/g,"$1 $2").trim():"";
     const fallback=displayName(meta),name=suffix?w.name+" "+suffix:(normalizeDropName(fallback).startsWith(compact)?fallback:w.name+" "+fallback);
-    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:getDrops(name)};
+    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:wikiAcquisition.parts.get(normalizeDropName(name.replace(w.name,"").trim()))||[]};
    });
    items.push({
     id:w.uniqueName,name:w.name,category,
     variant:variantOf(w),isPrime:!!w.isPrime,
     image:w.wikiaThumbnail||(w.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(w.imageName):""),
     wikiUrl:w.wikiaUrl||wikiPage(w.name),description:w.description||"",
-    drops:getDrops(blueprintName),parts
+    drops:wikiAcquisition.blueprint,parts
    });
   }
  }
@@ -124,11 +143,11 @@ async function main(){
  const counts=Object.fromEntries(CATEGORIES.map(([f,c])=>[c,items.filter(i=>i.category===c).length]));
  if(items.length<400||ids.size!==items.length||counts.primary<180||counts.secondary<130||counts.melee<200)throw new Error("Validação das armas falhou: "+JSON.stringify(counts));
  items.sort((a,b)=>a.category.localeCompare(b.category)||a.name.localeCompare(b.name));
- const data={items,counts,updatedAt:new Date().toISOString(),source:"WFCD mastery weapon catalogue + Warframe Wiki media + parsed Digital Extremes drop tables",sourceUrl:"https://wiki.warframe.com/w/Mastery_Rank_Checklist"};
+ const data={items,counts,updatedAt:new Date().toISOString(),source:"WFCD mastery weapon catalogue + Warframe Wiki weapon acquisition pages and component artwork",sourceUrl:"https://wiki.warframe.com/w/Mastery_Rank_Checklist"};
  await fs.mkdir(path.dirname(output),{recursive:true});
  await fs.writeFile(output,"/* Gerado automaticamente pelo GitHub Actions. */\nwindow.WFC_WEAPONS_SNAPSHOT="+JSON.stringify(data)+";\n","utf8");
  const allParts=items.flatMap(w=>w.parts||[]);
  console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",allParts.length);
- console.log("Dados Wiki:",{armasComProjetoDrop:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
+ console.log("Dados Wiki:",{paginasConsultadas:allRaw.length,armasComProjetoDrop:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
 }
 main().catch(e=>{console.error("Geração de armas cancelada:",e);process.exitCode=1;});
