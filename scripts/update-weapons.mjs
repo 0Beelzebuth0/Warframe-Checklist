@@ -21,27 +21,33 @@ function wikiTitle(weapon){
  const raw=weapon.wikiaUrl||wikiPage(weapon.name);
  try{return decodeURIComponent(new URL(raw).pathname.split("/").pop()).replace(/_/g," ");}catch{return weapon.name;}
 }
-function acquisitionSection(wikitext){
- const source=String(wikitext||""),heading=/^==\s*Acquisition\s*==\s*$/mi.exec(source);
+function stripWikiHtml(value){
+ return String(value||"").replace(/<sup[\s\S]*?<\/sup>/gi," ").replace(/<br\s*\/?>/gi," ").replace(/<\/(?:p|li|div|tr|td|th)>/gi," ").replace(/<[^>]*>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g," ").trim();
+}
+function acquisitionHtmlSection(html){
+ const source=String(html||""),heading=/<h[23]\b[^>]*>[\s\S]*?Acquisition[\s\S]*?<\/h[23]>/i.exec(source);
  if(!heading)return "";
- const start=heading.index+heading[0].length,tail=source.slice(start),next=/^==\s*[^=]/m.exec(tail);
+ const start=heading.index+heading[0].length,tail=source.slice(start),next=/<h[23]\b/i.exec(tail);
  return next?tail.slice(0,next.index):tail;
 }
-function parseWikiAcquisition(wikitext,weapon){
- const section=acquisitionSection(wikitext),result={blueprint:[],parts:new Map()};
+function parseWikiAcquisition(page,weapon){
+ const htmlSection=acquisitionHtmlSection(page?.html),wikitext=String(page?.wikitext||"");
+ const result={blueprint:[],parts:new Map()};
  const add=(key,source,detail)=>{
   const target=key==="blueprint"?result.blueprint:(result.parts.get(key)||[]);
   if(!target.some(x=>x.source===source&&x.detail===detail))target.push({source,chance:null,detail,sourceUrl:wikiPage(weapon.name)});
   if(key!=="blueprint")result.parts.set(key,target);
  };
- const tables=[...section.matchAll(/\{\|[\s\S]*?\|\}/g)];
+ const tables=[...htmlSection.matchAll(/<table\b[\s\S]*?<\/table>/gi)];
  for(const tableMatch of tables){
-  const table=tableMatch[0],headerLine=table.split(/\r?\n/).find(line=>/^!/.test(line.trim()));
-  if(!headerLine)continue;
-  const headers=headerLine.replace(/^!+/,"").split(/!!/).map(x=>x.replace(/<[^>]*>/g,"").replace(/\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g,"$1").replace(/'''|''/g,"").trim());
-  const rows=table.split(/\r?\n\|-/).slice(1);
+  const table=tableMatch[0],rows=[...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+  if(!rows.length)continue;
+  let headers=[];
   for(const row of rows){
-   const cells=row.split(/\|\|/).map(c=>c.replace(/^\s*\|/,"").replace(/<ref[\s\S]*?<\/ref>/gi,"").replace(/\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g,"$1").trim());
+   const th=[...row[1].matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map(x=>stripWikiHtml(x[1]));
+   if(th.length){headers=th;continue;}
+   const cells=[...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(x=>stripWikiHtml(x[1]));
+   if(!headers.length||!cells.length)continue;
    cells.forEach((cell,index)=>{
     const header=normalizeDropName(headers[index]||"");
     if(!header)return;
@@ -55,7 +61,8 @@ function parseWikiAcquisition(wikitext,weapon){
   }
  }
  if(!result.blueprint.length){
-  const plain=section.replace(/\{\|[\s\S]*?\|\}/g," ").replace(/\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g,"$1").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+  let plain=stripWikiHtml(htmlSection);
+  if(!plain)plain=acquisitionSection(wikitext).replace(/\{\|[\s\S]*?\|\}/g," ").replace(/\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g,"$1").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
   if(plain&&plain.length<1800)add("blueprint","Weapon Wiki · Acquisition",plain.slice(0,700));
  }
  return result;
@@ -66,16 +73,16 @@ async function fetchWikiPages(weapons){
  for(let i=0;i<batches.length;i+=3){
   await Promise.all(batches.slice(i,i+3).map(async batch=>{
    const query=batch.map(x=>encodeURIComponent(x)).join("%7C");
-   const url="https://wiki.warframe.com/api.php?action=query&format=json&prop=revisions&rvprop=content&rvslots=main&titles="+query;
+   const url="https://wiki.warframe.com/api.php?action=query&format=json&prop=extracts%7Crevisions&explaintext=0&exsectionformat=wiki&rvprop=content&rvslots=main&titles="+query;
    const data=await fetchJson(url);
    for(const page of Object.values(data.query?.pages||{})){
-    const revision=page.revisions?.[0],content=revision?.slots?.main?.content??revision?.slots?.main?.["*"]??revision?.["*"]??"";
-    pages.set(normalizeDropName(page.title),content);
+    const revision=page.revisions?.[0],wikitext=revision?.slots?.main?.content??revision?.slots?.main?.["*"]??revision?.["*"]??"";
+    pages.set(normalizeDropName(page.title),{html:page.extract||"",wikitext});
    }
   }));
  }
  if(pages.size<Math.min(100,titles.length*0.5))throw new Error("A Wiki não retornou páginas suficientes para validar as aquisições ("+pages.size+"/"+titles.length+").");
- return weapon=>pages.get(normalizeDropName(wikiTitle(weapon)))||"";
+ return weapon=>pages.get(normalizeDropName(wikiTitle(weapon)))||{html:"",wikitext:""};
 }
 function variantOf(item){
  const tags=item.tags||[];
