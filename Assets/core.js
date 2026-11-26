@@ -275,16 +275,21 @@ function renderWeaponsModule(host, id, focusKey) {
   function makeCard(item){
     const c=document.createElement("article");c.className="wf-card weapon-card";c.dataset.weapon=item.id;
     const parts=Array.isArray(item.parts)?item.parts:[];
-    const partHtml=parts.length?parts.map((part,index)=>'<section class="wf-part"><div class="wf-part-title"><img class="wf-part-image" data-part-image="'+index+'" alt="'+esc(part.name)+'" loading="lazy"><span>'+esc(part.name)+(part.count>1?' ×'+esc(part.count):"")+'</span></div><a class="wf-part-wiki" href="'+esc(part.wikiUrl||wikiPage(part.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a><div class="wf-drops'+((part.drops||[]).length>3?' has-many':'')+'">'+dropRows(part.drops,item.name)+'</div></section>').join(""):'<div class="wf-drop wf-unknown">'+(lang==="pt"?"Peças individuais não identificadas na fonte.":"Individual parts not listed in the source.")+'</div>';
-    c.innerHTML='<div class="wf-head"><div class="wf-expander weapon-expander"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count">'+(item.variant?esc(item.variant):"")+'</small><span class="bar sm"><i></i></span></span></div><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div><button type="button" class="weapon-details-toggle btn" aria-expanded="false">'+(lang==="pt"?"Peças, imagens e locais de obtenção":"Parts, images & drop locations")+'</button><div class="weapon-details" hidden><section class="wf-part"><div class="wf-part-title">'+(lang==="pt"?"Projeto da arma":"Weapon Blueprint")+'</div><div class="wf-drops'+((item.drops||[]).length>3?' has-many':'')+'">'+dropRows(item.drops,item.name)+'</div></section>'+partHtml+'</div>';
+    const partHtml=parts.length?parts.map((part,index)=>'<section class="wf-part"><div class="wf-part-title"><img class="wf-part-image" data-part-image="'+index+'" alt="'+esc(part.name)+'" loading="lazy"><span>'+esc(part.name)+(part.count>1?' ×'+esc(part.count):"")+'</span></div><a class="wf-part-wiki" href="'+esc(part.wikiUrl||item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a><div class="wf-drops'+((part.drops||[]).length>3?' has-many':'')+'">'+dropRows(part.drops,item.name)+'</div></section>').join(""):'<div class="wf-drop wf-unknown">'+(lang==="pt"?"Peças individuais não identificadas na fonte.":"Individual parts not listed in the source.")+'</div>';
+    const blueprint='<section class="wf-part"><div class="wf-part-title">'+(lang==="pt"?"Projeto da arma":"Weapon Blueprint")+'</div><div class="wf-drops'+((item.drops||[]).length>3?' has-many':'')+'">'+dropRows(item.drops,item.name)+'</div></section>';
+    c.innerHTML='<div class="wf-head"><button type="button" class="wf-expander" data-expand="'+esc(item.id)+'" aria-expanded="false"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener" aria-label="'+esc(t("wiki"))+'">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count">'+(item.variant?esc(item.variant):"")+'</small><span class="bar sm"><i></i></span></span><span class="wf-chevron" aria-hidden="true">›</span></button><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div><div class="wf-parts weapon-parts" hidden>'+blueprint+partHtml+'</div>';
     const img=c.querySelector(".wf-image");
     if(item.image){img.src=item.image;img.onerror=()=>loadImg(img,item.name,[],item.name);}else loadImg(img,item.name,[],item.name);
     c.querySelectorAll("[data-part-image]").forEach(el=>{
       const part=parts[Number(el.dataset.partImage)];
       if(part.image){el.src=part.image;el.onerror=()=>loadImg(el,part.name,[],part.name);}else loadImg(el,part.name,[],part.name);
     });
-    const details=c.querySelector(".weapon-details"),toggle=c.querySelector(".weapon-details-toggle");
-    toggle.onclick=()=>{const opened=details.hidden;details.hidden=!opened;toggle.setAttribute("aria-expanded",String(opened));};
+    c.querySelector("[data-expand]").onclick=()=>{
+      c.classList.toggle("expanded");
+      const opened=c.classList.contains("expanded"),btn=c.querySelector("[data-expand]");
+      btn.setAttribute("aria-expanded",String(opened));
+      c.querySelector(".weapon-parts").hidden=!opened;
+    };
     c.querySelector("[data-weapon]").onchange=e=>{if(e.currentTarget.checked)done[item.key]=true;else delete done[item.key];save();refresh();};
     cards.set(item.id,c);return c;
   }

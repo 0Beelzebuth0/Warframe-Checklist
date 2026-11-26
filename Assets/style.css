@@ -377,3 +377,38 @@ h2.sec{font-size:24px;margin:36px 0 2px}
  .weapon-card .weapon-details{grid-template-columns:1fr}
  .weapon-card .weapon-details .wf-part{border-right:0;border-bottom:1px solid var(--line)}
 }
+
+
+/* Lobby: keep card and image gutters identical in every view mode. */
+.mods .mod{margin:0!important;padding:0!important;gap:0!important;box-sizing:border-box}
+.mods .mod .img{margin:0!important;border-radius:0!important;box-sizing:border-box;overflow:hidden;flex-shrink:0}
+.mods .mod .img img{display:block;width:100%;height:100%;max-width:none;object-fit:cover;object-position:center}
+.mods.v-m .mod .img{width:100%;height:auto;aspect-ratio:16/10}
+.mods.v-xl .mod .img{width:100%;height:auto;aspect-ratio:21/9}
+.mods.v-l .mod .img{width:100%;height:auto;aspect-ratio:16/10}
+.mods.v-s .mod .img{width:100%;height:auto;aspect-ratio:16/10}
+.mods.v-list .mod .img{width:48px;height:48px;aspect-ratio:1}
+.mods.v-tiles .mod .img{width:92px;height:92px;aspect-ratio:1}
+.mods.v-cont .mod .img{width:150px;height:94px;aspect-ratio:16/10}
+.mods.v-det .mod .img{width:56px;height:56px;aspect-ratio:1}
+.mods .mod .info{min-width:0;flex:1;padding:12px 14px!important;box-sizing:border-box}
+.mods.v-list .mod .info,.mods.v-tiles .mod .info,.mods.v-cont .mod .info{padding:12px 14px!important}
+.mods.v-det .mod .info{padding:0!important}
+.mods .mod .meta{gap:8px;align-items:center;min-height:18px}
+.mods .mod .bar{margin-top:auto}
+@media(max-width:620px){
+ .mods.v-cont .mod .img{width:100px;height:63px}
+ .mods.v-list .mod .img{width:48px;height:48px}
+}
+
+/* Weapon detail panel follows the same click-to-expand interaction as Warframes. */
+.weapon-card.expanded{grid-column:1/-1}
+.weapon-parts{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:stretch}
+.weapon-parts .wf-part{min-width:0;min-height:100%;border-right:1px solid var(--line);border-bottom:0}
+.weapon-parts .wf-part-title{min-height:52px;overflow-wrap:anywhere}
+.weapon-parts .wf-part-image{width:52px;height:52px;object-fit:contain;flex:none;border:1px solid var(--line);border-radius:8px;background:#0e141d;padding:3px}
+.weapon-parts .wf-part-wiki{display:inline-block;margin:0 0 8px;color:var(--gold);font-size:11px;text-decoration:none}
+.weapon-parts .wf-part-wiki:hover{text-decoration:underline}
+.weapon-parts .wf-drops{min-width:0}
+.weapon-parts .wf-drops.has-many{max-height:260px;overflow-y:auto;overscroll-behavior:contain;padding-right:5px}
+@media(max-width:760px){.weapon-parts{grid-template-columns:1fr}.weapon-parts .wf-part{border-right:0;border-bottom:1px solid var(--line)}}
