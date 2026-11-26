@@ -26,7 +26,10 @@ function buildDropIndex(data){
   const key=[label,n,detail].join("|");
   const normalized=normalizeDropName(itemName);
   const rows=index.get(normalized)||[];
-  if(!rows.some(x=>x.key===key))rows.push({key,source:label,chance:n,detail:String(detail||""),sourceUrl:pageUrl(label.split(" · ").pop())});
+  if(!rows.some(x=>x.key===key)){
+   const pieces=label.split(" · "),sourceTitle=/^(Lith|Meso|Neo|Axi)\\b/.test(pieces[0])?pieces[0]+" Relic":pieces.length>=3?pieces[1]:pieces[0];
+   rows.push({key,source:label,chance:n,detail:String(detail||""),sourceUrl:pageUrl(sourceTitle)});
+  }
   index.set(normalized,rows);
  };
  for(const entry of data.blueprintLocations||[]){
