@@ -56,7 +56,7 @@ const itemDone = (m, i) => m.kind === "warframes" ? (i.parts || []).every(p => d
 function totals() {
   return Object.values(WFC.mods).reduce((a, m) => { const s = stats(m); a.t += s.t; a.d += s.d; return a; }, { t: 0, d: 0 });
 }
-const pct = (d, t) => (t ? Math.round((d / t) * 100) : 0);
+const pct = (d, t) => (t ? Number(((d / t) * 100).toFixed(1)) : 0);
 
 /* ---------- images (Wiki) ---------- */
 const wikiPage = n => "https://wiki.warframe.com/w/" + encodeURIComponent(n.replace(/ /g, "_"));
@@ -274,8 +274,13 @@ function renderWeaponsModule(host, id, focusKey) {
   function makeCard(item){
     const c=document.createElement("article");c.className="wf-card weapon-card";c.dataset.weapon=item.id;
     const image=item.image||"";
-    c.innerHTML='<div class="wf-head"><div class="wf-expander weapon-expander"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count">'+esc(item.type||"")+(item.variant?' · '+esc(item.variant):"")+'</small><span class="bar sm"><i></i></span></span></div><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div>';
+    const dropRows=(drops)=>Array.isArray(drops)&&drops.length?drops.map(d=>'<div class="wf-drop"><span>'+esc(d.source||"Fonte não identificada")+'</span><strong>'+(d.chance==null?esc(t("wfChanceUnknown")):esc(String(d.chance).replace(".",",")+"%"))+'</strong>'+(d.detail?'<small>'+esc(d.detail)+'</small>':"")+'<a href="'+esc(d.sourceUrl||item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
+    const parts=Array.isArray(item.parts)?item.parts:[];
+    const partHtml=parts.length?parts.map(part=>'<section class="wf-part"><div class="wf-part-title">'+esc(part.name)+(part.count>1?' ×'+esc(part.count):"")+'</div><div class="wf-drops'+((part.drops||[]).length>3?' has-many':'')+'">'+dropRows(part.drops)+'</div></section>').join(""):'<div class="wf-drop wf-unknown">'+(lang==="pt"?"Componentes não identificados na fonte de dados.":"Components not identified in the data source.")+'</div>';
+    c.innerHTML='<div class="wf-head"><div class="wf-expander weapon-expander"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count">'+esc(item.type||"")+(item.variant?' · '+esc(item.variant):"")+'</small><span class="bar sm"><i></i></span></span></div><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div><button type="button" class="weapon-details-toggle btn" aria-expanded="false">'+(lang==="pt"?"Peças e fontes de obtenção":"Parts & drop sources")+'</button><div class="weapon-details" hidden><section class="wf-part"><div class="wf-part-title">'+(lang==="pt"?"Projeto da arma":"Weapon Blueprint")+'</div><div class="wf-drops'+((item.drops||[]).length>3?' has-many':'')+'">'+dropRows(item.drops)+'</div></section>'+partHtml+'</div>';
     const img=c.querySelector("img");if(image)img.src=image;else loadImg(img,item.name,[],item.name);img.onerror=()=>{img.classList.add("image-failed");};
+    const details=c.querySelector(".weapon-details"),toggle=c.querySelector(".weapon-details-toggle");
+    toggle.onclick=()=>{const opened=details.hidden;details.hidden=!opened;toggle.setAttribute("aria-expanded",String(opened));};
     c.querySelector("[data-weapon]").onchange=e=>{if(e.currentTarget.checked)done[item.key]=true;else delete done[item.key];save();refresh();};
     cards.set(item.id,c);return c;
   }
@@ -320,6 +325,8 @@ function renderModule(host, id, focusKey) {
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
   const groupOpen = {};
+  let journeyOrder = lsGet("wfc.journey.order") || "codex";
+  const communityQuestOrder = ["Awakening","Vor's Prize","The Teacher","Vox Solaris","Once Awake","Heart of Deimos","The Archwing","The Duviri Paradox","Natah","The Second Dream","The War Within","Rising Tide","Chains of Harrow","Apostasy Prologue","The Sacrifice","Chimera Prologue","Erra","The Maker","Prelude to War","The New War","Whispers in the Walls","The Lotus Eaters","The Hex","The Old Peace","Prologue to Tau","Saya's Vigil","Howl of the Kubrow","Stolen Dreams","The New Strange","The Deadlock Protocol","Call of the Tempestarii","The Glast Gambit","Octavia's Anthem","Sands of Inaros","Hidden Messages","Mask of the Revenant","The Silver Grove","The Waverider","The Limbo Theorem","The Jordas Precept","Patient Zero","A Man of Few Words","Jade Shadows","Jade Shadows: Constellations","Angels of the Zariman","Veilbreaker"];
   groups.forEach(g => {
     groupFilters[g.id] = "all";
     groupOpen[g.id] = false;
@@ -369,8 +376,17 @@ function renderModule(host, id, focusKey) {
   const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k)+" "+esc(t(l)); moduleViewRow.appendChild(b); }); };
   moduleViewRow.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); };
   drawModuleViews();
+  if (id === "01JOURNEYS") {
+    const toggle = document.createElement("button");
+    toggle.type = "button"; toggle.className = "btn journey-order-toggle";
+    const drawToggle = () => { toggle.textContent = journeyOrder === "community" ? "⇅ Comunidade" : "⇅ Codex"; toggle.setAttribute("aria-pressed", String(journeyOrder === "community")); };
+    drawToggle();
+    host.querySelector(".search-row").insertBefore(toggle, host.querySelector("#chkMarkAll").closest("label"));
+    toggle.onclick = () => { journeyOrder = journeyOrder === "codex" ? "community" : "codex"; lsSet("wfc.journey.order", journeyOrder); rerender(); };
+  }
   const cards = [];
-  m.items.forEach(it => {
+  const displayItems = id === "01JOURNEYS" && journeyOrder === "community" ? [...m.items].sort((a,b) => { const ai=communityQuestOrder.indexOf(a.name), bi=communityQuestOrder.indexOf(b.name); return (ai<0?999:ai)-(bi<0?999:bi) || m.items.indexOf(a)-m.items.indexOf(b); }) : m.items;
+  displayItems.forEach(it => {
     const sec = host.querySelector(`section[data-g="${CSS.escape(it.g)}"]`) || host.querySelector("section");
     const descText = tpl(it.desc).trim();
     const c = document.createElement("article"); c.className = "card"; c.dataset.key = it.key;
