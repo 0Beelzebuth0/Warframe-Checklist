@@ -165,79 +165,17 @@ async function wikiThumbnails(names) {
   return found;
 }
 
-async function wikiComponentThumbnails(frames) {
-  const filesByKey = new Map();
-  const fileTitles = new Set();
-  const normalizeTitle = value => String(value || "").replace(/^File:/i, "").replace(/_/g, " ").replace(/\.[^.]+$/, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  const batches = [];
-  for (let i = 0; i < frames.length; i += 30) batches.push(frames.slice(i, i + 30));
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-    const url = "https://wiki.warframe.com/api.php?action=query&format=json&redirects=1&prop=images&imlimit=500&titles=" +
-      encodeURIComponent(batch.map(frame => frame.name).join("|"));
-    try {
-      const response = await fetch(url, {
-        headers: { "accept": "application/json", "user-agent": "Warframe-Checklist-GitHub-Actions" },
-        signal: AbortSignal.timeout(45000)
-      });
-      if (!response.ok) throw new Error("Wiki API HTTP " + response.status);
-      const json = await response.json();
-      for (const page of Object.values(json.query?.pages || {})) {
-        if (!page.title || !Array.isArray(page.images)) continue;
-        if (batchIndex === 0 && page.title.toLowerCase() === "ash") console.log("Wiki page images sample:", page.title, page.images.length, page.images.slice(0, 30).map(image => image.title));
-        const frame = batch.find(item => normalizeTitle(item.name) === normalizeTitle(page.title));
-        if (!frame) continue;
-        for (const [, label] of PARTS) {
-          const name = normalizeTitle(frame.name).replace(/[^a-z0-9]/g, ""), part = normalizeTitle(label).replace(/[^a-z0-9]/g, "");
-          const candidates = page.images.filter(image => {
-            const file = normalizeTitle(image.title).replace(/[^a-z0-9]/g, "");
-            return file.startsWith(name) && file.includes(part);
-          }).sort((a, b) => {
-            const aa = normalizeTitle(a.title), bb = normalizeTitle(b.title);
-            const ap = aa.includes("blueprint") ? 0 : 1, bp = bb.includes("blueprint") ? 0 : 1;
-            return ap - bp || aa.length - bb.length;
-          });
-          if (candidates[0]) {
-            filesByKey.set(frame.name.toLowerCase() + "|" + label.toLowerCase(), candidates[0].title);
-            fileTitles.add(candidates[0].title);
-          }
-        }
-      }
-    } catch (error) {
-      console.warn("Não foi possível listar imagens dos componentes da Wiki:", error.message);
-    }
-  }
-
-  const urls = new Map();
-  const titles = [...fileTitles];
-  for (let i = 0; i < titles.length; i += 40) {
-    const batch = titles.slice(i, i + 40);
-    const url = "https://wiki.warframe.com/api.php?action=query&format=json&prop=imageinfo&iiprop=url&iiurlwidth=200&titles=" +
-      encodeURIComponent(batch.join("|"));
-    try {
-      const response = await fetch(url, {
-        headers: { "accept": "application/json", "user-agent": "Warframe-Checklist-GitHub-Actions" },
-        signal: AbortSignal.timeout(45000)
-      });
-      if (!response.ok) throw new Error("Wiki API HTTP " + response.status);
-      const json = await response.json();
-      for (const page of Object.values(json.query?.pages || {})) {
-        const info = page.imageinfo?.[0];
-        if (page.title && info?.thumburl) urls.set(normalizeTitle(page.title), info.thumburl);
-      }
-    } catch (error) {
-      console.warn("Não foi possível obter miniaturas dos componentes da Wiki:", error.message);
-    }
-  }
-
-  const result = new Map();
-  for (const [key, title] of filesByKey) {
-    const imageUrl = urls.get(normalizeTitle(title));
-    if (imageUrl) result.set(key, imageUrl);
-  }
-  console.log("Imagens oficiais dos componentes encontradas: " + result.size + "/" + (frames.length * PARTS.length));
-  return result;
+function componentIconFile(partId, isPrime) {
+  const files = {
+    neuroptics: isPrime ? "PrimeHelmet.png" : "Helmet.png",
+    chassis: isPrime ? "PrimeChassis.png" : "Chassis.png",
+    systems: isPrime ? "PrimeSystems.png" : "Systems.png"
+  };
+  return files[partId] || "";
 }
+
+const wikiPartFile = file => "https://wiki.warframe.com/w/Special:Redirect/file/" +
+  encodeURIComponent(file) + "?width=180";
 
 async function main() {
   const outputArg = process.argv.indexOf("--output");
@@ -257,7 +195,7 @@ async function main() {
   }
 
   const frames = normalizeWarframes(rawFrames);
-  const wikiImages = await wikiComponentThumbnails(frames.filter(frame => frame?.type === "Warframe"));
+
   const items = [];
 
   for (const frame of frames) {
@@ -266,7 +204,7 @@ async function main() {
 
     const parts = PARTS.map(([id, label]) => {
       const itemName = frame.name + " " + label + " Blueprint";
-      return { id, label, image: wikiImages.get(frame.name.toLowerCase() + "|" + label.toLowerCase()) || "", drops: buildDrops(itemName, drops) };
+      return { id, label, image: wikiPartFile(componentIconFile(id, frame.isPrime)), drops: buildDrops(itemName, drops) };
     });
 
     // Warframes Prime só entram quando pelo menos uma peça tem uma fonte de obtenção atual.
