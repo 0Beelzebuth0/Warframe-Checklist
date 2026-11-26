@@ -85,7 +85,7 @@ function parseWikiAcquisition(page,weapon){
   return Number.isFinite(n)&&n>=0&&n<=100?n:null;
  };
  const relicOdds={common:{intact:25.33,exceptional:23.33,flawless:20,radiant:16.67},uncommon:{intact:11,exceptional:13,flawless:17,radiant:20},rare:{intact:2,exceptional:4,flawless:6,radiant:10}};
- const relicPattern=/\b(Lith|Meso|Neo|Axi|Requiem|Omnia)\s+([A-Z]\d+|[IVX]+)\b(?:\s*\(([VB])\))?/gi;
+ const relicPattern=/\b(Lith|Meso|Neo|Axi|Requiem|Omnia)\s+([A-Z]\d+|[IVX]+)\b(?:\s+(Common|Uncommon|Rare))?(?:\s*\(([VB])\))?/gi;
  const tables=[...htmlSection.matchAll(/<table\b[\s\S]*?<\/table>/gi)];
  for(const tableMatch of tables){
   const rows=[...tableMatch[0].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
@@ -108,8 +108,8 @@ function parseWikiAcquisition(page,weapon){
     // Prime-style tables sometimes split the component, relic and rarity into separate cells.
     if(key)cells.forEach(cell=>{
      for(const match of cell.matchAll(relicPattern)){
-      const rarity=(cells.find(x=>/\b(Common|Uncommon|Rare)\b/i.test(x))||"").match(/Common|Uncommon|Rare/i)?.[0]||"";
-      const vault=match[3]==="V"?"Vaulted":match[3]==="B"?"Baro Ki'Teer exclusive":"";
+      const rarity=match[3]||(cells.find(x=>/\b(Common|Uncommon|Rare)\b/i.test(x))||"").match(/Common|Uncommon|Rare/i)?.[0]||"";
+      const vault=match[4]==="V"?"Vaulted":match[4]==="B"?"Baro Ki'Teer exclusive":"";
       const odds=relicOdds[rarity.toLowerCase()]||null;
       add(key,match[1]+" "+match[2]+" Relic",[rarity,vault].filter(Boolean).join(" · "),odds?.intact??null,odds);
      }
@@ -120,8 +120,8 @@ function parseWikiAcquisition(page,weapon){
     const key=partKeyFor(headers[index]||"");
     if(!key||!cell)return;
     for(const match of cell.matchAll(relicPattern)){
-     const rarity=cell.match(/Common|Uncommon|Rare/i)?.[0]||"";
-     const vault=match[3]==="V"?"Vaulted":match[3]==="B"?"Baro Ki'Teer exclusive":"";
+     const rarity=match[3]||cell.match(/Common|Uncommon|Rare/i)?.[0]||"";
+     const vault=match[4]==="V"?"Vaulted":match[4]==="B"?"Baro Ki'Teer exclusive":"";
      const odds=relicOdds[rarity.toLowerCase()]||null;
      add(key,match[1]+" "+match[2]+" Relic",[rarity,vault].filter(Boolean).join(" · "),odds?.intact??null,odds);
     }
