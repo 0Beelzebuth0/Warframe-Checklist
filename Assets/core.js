@@ -259,26 +259,30 @@ function renderWarframesModule(host, id, focusKey) {
 
 function renderWeaponsModule(host, id, focusKey) {
   const m=WFC.mods[id]; if(!m)return;
-  let q="", category="primary", completion="all", view=VIEWS.some(v=>v[0]===lsGet(K.view))?lsGet(K.view):"m", weaponType="all";
-  const categories=[["primary","Primary","Primárias"],["secondary","Secondary","Secundárias"],["melee","Melee","Armas brancas"]];
-  const open=new Set();
+  let q="", category="primary", completion="all", view=VIEWS.some(v=>v[0]===lsGet(K.view))?lsGet(K.view):"m";
+  const categories=[["primary","Primary","Primárias"],["secondary","Secondary","Secundárias"],["melee","Melee","Melee"]];
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wepStat"></span></div><div class="bar"><i id="wepBar"></i></div><div class="wep-category-tabs" id="wepTabs"></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wepSearch" type="search" placeholder="'+esc(t("msearch"))+'"><select class="wep-type-select" id="wepType"><option value="all">Todos os tipos</option></select><div class="filter-group"><button class="btn on" data-completion="all">'+esc(t("fAll"))+'</button><button class="btn" data-completion="done">'+esc(t("fDone"))+'</button><button class="btn" data-completion="pending">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wepMarkAll"><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="vrow module-view-row" id="wepViewRow"></div><div class="wf-grid" id="wepGrid"></div><p class="subtle" id="wepNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
-  const grid=host.querySelector("#wepGrid"), tabs=host.querySelector("#wepTabs"), typeSelect=host.querySelector("#wepType"), viewRow=host.querySelector("#wepViewRow");
-  const items=m.items, cards=new Map();
-  function currentItems(){return items.filter(i=>i.category===category);}
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wepStat"></span></div><div class="bar"><i id="wepBar"></i></div><div class="wep-category-tabs" id="wepTabs"></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wepSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-completion="all">'+esc(t("fAll"))+'</button><button class="btn" data-completion="done">'+esc(t("fDone"))+'</button><button class="btn" data-completion="pending">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wepMarkAll"><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="vrow module-view-row" id="wepViewRow"></div><div class="wf-grid" id="wepGrid"></div><p class="subtle" id="wepNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
+  const grid=host.querySelector("#wepGrid"),tabs=host.querySelector("#wepTabs"),viewRow=host.querySelector("#wepViewRow");
+  const items=m.items,cards=new Map();
+  const currentItems=()=>items.filter(i=>i.category===category);
   function drawTabs(){tabs.innerHTML=categories.map(([id,en,pt])=>'<button class="btn'+(id===category?' on':'')+'" data-category="'+id+'">'+(lang==="pt"?pt:en)+'</button>').join("");}
   function drawViews(){viewRow.innerHTML="";VIEWS.forEach(([k,l])=>{const b=document.createElement("button");b.className="btn"+(k===view?" on":"");b.dataset.view=k;b.innerHTML=svg(k)+" "+esc(t(l));viewRow.appendChild(b);});}
-  function drawTypes(){const types=[...new Set(currentItems().map(i=>i.type||"Outros"))].sort((a,b)=>a.localeCompare(b));typeSelect.innerHTML='<option value="all">Todos os tipos</option>'+types.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join("");if(!types.includes(weaponType))weaponType="all";typeSelect.value=weaponType;}
+  function dropRows(drops,weaponName){
+    return Array.isArray(drops)&&drops.length?drops.map(d=>'<div class="wf-drop"><span>'+esc(d.source||"Fonte não identificada")+'</span><strong>'+(d.chance==null?esc(t("wfChanceUnknown")):esc(String(d.chance).replace(".",",")+"%"))+'</strong>'+(d.detail?'<small>'+esc(d.detail)+'</small>':"")+'<a href="'+esc(d.sourceUrl||wikiPage(weaponName))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
+  }
   function makeCard(item){
     const c=document.createElement("article");c.className="wf-card weapon-card";c.dataset.weapon=item.id;
-    const image=item.image||"";
-    const dropRows=(drops)=>Array.isArray(drops)&&drops.length?drops.map(d=>'<div class="wf-drop"><span>'+esc(d.source||"Fonte não identificada")+'</span><strong>'+(d.chance==null?esc(t("wfChanceUnknown")):esc(String(d.chance).replace(".",",")+"%"))+'</strong>'+(d.detail?'<small>'+esc(d.detail)+'</small>':"")+'<a href="'+esc(d.sourceUrl||item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
     const parts=Array.isArray(item.parts)?item.parts:[];
-    const partHtml=parts.length?parts.map(part=>'<section class="wf-part"><div class="wf-part-title">'+esc(part.name)+(part.count>1?' ×'+esc(part.count):"")+'</div><div class="wf-drops'+((part.drops||[]).length>3?' has-many':'')+'">'+dropRows(part.drops)+'</div></section>').join(""):'<div class="wf-drop wf-unknown">'+(lang==="pt"?"Componentes não identificados na fonte de dados.":"Components not identified in the data source.")+'</div>';
-    c.innerHTML='<div class="wf-head"><div class="wf-expander weapon-expander"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count">'+esc(item.type||"")+(item.variant?' · '+esc(item.variant):"")+'</small><span class="bar sm"><i></i></span></span></div><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div><button type="button" class="weapon-details-toggle btn" aria-expanded="false">'+(lang==="pt"?"Peças e fontes de obtenção":"Parts & drop sources")+'</button><div class="weapon-details" hidden><section class="wf-part"><div class="wf-part-title">'+(lang==="pt"?"Projeto da arma":"Weapon Blueprint")+'</div><div class="wf-drops'+((item.drops||[]).length>3?' has-many':'')+'">'+dropRows(item.drops)+'</div></section>'+partHtml+'</div>';
-    const img=c.querySelector("img");if(image)img.src=image;else loadImg(img,item.name,[],item.name);img.onerror=()=>{img.classList.add("image-failed");};
+    const partHtml=parts.length?parts.map((part,index)=>'<section class="wf-part"><div class="wf-part-title"><img class="wf-part-image" data-part-image="'+index+'" alt="'+esc(part.name)+'" loading="lazy"><span>'+esc(part.name)+(part.count>1?' ×'+esc(part.count):"")+'</span></div><a class="wf-part-wiki" href="'+esc(part.wikiUrl||wikiPage(part.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a><div class="wf-drops'+((part.drops||[]).length>3?' has-many':'')+'">'+dropRows(part.drops,item.name)+'</div></section>').join(""):'<div class="wf-drop wf-unknown">'+(lang==="pt"?"Peças individuais não identificadas na fonte.":"Individual parts not listed in the source.")+'</div>';
+    c.innerHTML='<div class="wf-head"><div class="wf-expander weapon-expander"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count">'+(item.variant?esc(item.variant):"")+'</small><span class="bar sm"><i></i></span></span></div><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div><button type="button" class="weapon-details-toggle btn" aria-expanded="false">'+(lang==="pt"?"Peças, imagens e locais de obtenção":"Parts, images & drop locations")+'</button><div class="weapon-details" hidden><section class="wf-part"><div class="wf-part-title">'+(lang==="pt"?"Projeto da arma":"Weapon Blueprint")+'</div><div class="wf-drops'+((item.drops||[]).length>3?' has-many':'')+'">'+dropRows(item.drops,item.name)+'</div></section>'+partHtml+'</div>';
+    const img=c.querySelector(".wf-image");
+    if(item.image){img.src=item.image;img.onerror=()=>loadImg(img,item.name,[],item.name);}else loadImg(img,item.name,[],item.name);
+    c.querySelectorAll("[data-part-image]").forEach(el=>{
+      const part=parts[Number(el.dataset.partImage)];
+      if(part.image){el.src=part.image;el.onerror=()=>loadImg(el,part.name,[],part.name);}else loadImg(el,part.name,[],part.name);
+    });
     const details=c.querySelector(".weapon-details"),toggle=c.querySelector(".weapon-details-toggle");
     toggle.onclick=()=>{const opened=details.hidden;details.hidden=!opened;toggle.setAttribute("aria-expanded",String(opened));};
     c.querySelector("[data-weapon]").onchange=e=>{if(e.currentTarget.checked)done[item.key]=true;else delete done[item.key];save();refresh();};
@@ -293,19 +297,17 @@ function renderWeaponsModule(host, id, focusKey) {
     let visible=0;
     items.forEach(i=>{
       const c=cards.get(i.id),isDone=!!done[i.key];
-      const matches=i.category===category&&(completion==="all"||(completion==="done"&&isDone)||(completion==="pending"&&!isDone))&&(weaponType==="all"||(i.type||"Outros")===weaponType)&&(!nq||norm(i.name).includes(nq));
+      const matches=i.category===category&&(completion==="all"||(completion==="done"&&isDone)||(completion==="pending"&&!isDone))&&(!nq||norm(i.name).includes(nq));
       c.hidden=!matches;if(matches)visible++;
-      c.classList.toggle("done",isDone);const cb=c.querySelector("[data-weapon]");cb.checked=isDone;
-      c.querySelector(".wf-count").textContent=(i.type||"Outros")+(i.variant?" · "+i.variant:"")+(i.isPrime?" · PRIME":"");
+      c.classList.toggle("done",isDone);c.querySelector("[data-weapon]").checked=isDone;
       c.querySelector(".wf-title .bar i").style.width=(isDone?100:0)+"%";
     });
     host.querySelector("#wepNoResults").hidden=visible>0;
     const keys=scope.map(i=>i.key),count=keys.filter(k=>done[k]).length,box=host.querySelector("#wepMarkAll");
     box.checked=keys.length>0&&count===keys.length;box.indeterminate=count>0&&count<keys.length;
   }
-  tabs.onclick=e=>{const b=e.target.closest("[data-category]");if(!b)return;category=b.dataset.category;weaponType="all";drawTabs();drawTypes();refresh();};
+  tabs.onclick=e=>{const b=e.target.closest("[data-category]");if(!b)return;category=b.dataset.category;drawTabs();refresh();};
   viewRow.onclick=e=>{const b=e.target.closest("[data-view]");if(!b)return;view=b.dataset.view;lsSet(K.view,view);grid.className="wf-grid v-"+view;drawViews();};
-  typeSelect.onchange=()=>{weaponType=typeSelect.value;refresh();};
   host.querySelector("#wepSearch").oninput=e=>{q=e.target.value;refresh();};
   host.querySelectorAll("[data-completion]").forEach(b=>b.onclick=()=>{completion=b.dataset.completion;refresh();});
   host.querySelector("#wepMarkAll").onchange=()=>{
@@ -313,7 +315,7 @@ function renderWeaponsModule(host, id, focusKey) {
     if(confirm(t(any?"confUnmarkAll":"confMarkAll"))){keys.forEach(k=>{if(any)delete done[k];else done[k]=true;});save();}
     refresh();
   };
-  grid.className="wf-grid v-"+view;drawTabs();drawTypes();drawViews();refresh();
+  grid.className="wf-grid v-"+view;drawTabs();drawViews();refresh();
 }
 
 /* ---------- Module view ---------- */
