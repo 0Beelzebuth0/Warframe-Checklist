@@ -6,11 +6,21 @@ const CATEGORIES=[["Primary","primary"],["Secondary","secondary"],["Melee","mele
 const COMPONENTS_URL=BASE+"Components.json";
 const EXCLUDED=/^(?:Excalibur Prime)$/i;
 
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function fetchJson(url){
- const r=await fetch(url,{headers:{"accept":"application/json","user-agent":"Warframe-Checklist-GitHub-Actions"},signal:AbortSignal.timeout(90000)});
- if(!r.ok)throw new Error("HTTP "+r.status+" ao consultar "+url);
- return r.json();
+ for(let attempt=0;attempt<6;attempt++){
+  const r=await fetch(url,{headers:{"accept":"application/json","user-agent":"Warframe-Checklist-GitHub-Actions"},signal:AbortSignal.timeout(90000)});
+  if(r.ok)return r.json();
+  if(r.status===429||r.status>=500){
+   const retry=Number(r.headers.get("retry-after"));
+   await sleep(Number.isFinite(retry)&&retry>0?retry*1000:Math.min(30000,1500*Math.pow(2,attempt)));
+   continue;
+  }
+  throw new Error("HTTP "+r.status+" ao consultar "+url);
+ }
+ throw new Error("A Wiki limitou repetidamente a consulta após novas tentativas: "+url);
 }
+
 const wikiPage=n=>"https://wiki.warframe.com/w/"+encodeURIComponent(String(n||"").trim().replace(/\s+/g,"_"));
 function normalizeDropName(value){
  return String(value||"").replace(/\s+Blueprint$/i,"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
@@ -95,16 +105,17 @@ async function fetchWikiPages(weapons){
   }));
  }
  const templated=[...pages.entries()].filter(([,page])=>{const acq=acquisitionSection(page.wikitext);return /\{\|/.test(acq)||/\{\{\s*(?!BuildAutomatic\b)[^}]+\}\}/i.test(acq);});
- for(let i=0;i<templated.length;i+=6){
-  await Promise.all(templated.slice(i,i+6).map(async ([key,page])=>{
+ for(let i=0;i<templated.length;i+=2){
+  await Promise.all(templated.slice(i,i+2).map(async ([key,page])=>{
    const weaponTitle=titles.find(title=>normalizeDropName(title)===key)||key;
    const url="https://wiki.warframe.com/api.php?action=parse&format=json&prop=text&page="+encodeURIComponent(weaponTitle);
    const rendered=await fetchJson(url);
    const html=rendered.parse?.text?.["*"]??rendered.parse?.text??"";
    if(html)pages.set(key,{...page,html});
   }));
+  await sleep(350);
  }
- console.log("Páginas Wiki renderizadas para tabelas de Relíquias:",templated.length);
+ console.log("Páginas Wiki renderizadas para tabelas de aquisição:",templated.length);
 
  if(pages.size<Math.min(100,titles.length*0.5))throw new Error("A Wiki não retornou páginas suficientes para validar as aquisições ("+pages.size+"/"+titles.length+").");
  return weapon=>pages.get(normalizeDropName(wikiTitle(weapon)))||{html:"",wikitext:""};
