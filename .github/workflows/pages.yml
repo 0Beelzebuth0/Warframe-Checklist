@@ -3,6 +3,8 @@ name: Deploy Warframe Checklist to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   schedule:
     - cron: "0 */6 * * *"
   workflow_dispatch:
@@ -46,6 +48,7 @@ jobs:
           path: _site
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
