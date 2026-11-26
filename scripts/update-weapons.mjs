@@ -122,6 +122,9 @@ async function main(){
  const items=[];
  const allRaw=lists.flatMap(([category,raw])=>raw.filter(w=>isMasteryWeapon(w,category)).map(w=>({w,category})));
  const wikiDropLookup=await fetchWikiPages(allRaw.map(x=>x.w));
+ const debugAk=allRaw.find(x=>x.w.name==="Akstiletto Prime")?.w;
+ if(debugAk){const pg=wikiDropLookup(debugAk),hi=pg.html.indexOf("Acquisition"),wi=pg.wikitext.indexOf("Acquisition");console.log("WIKI SAMPLE",JSON.stringify({htmlLength:pg.html.length,htmlSnippet:pg.html.slice(Math.max(0,hi-200),hi+2400),wikitextLength:pg.wikitext.length,wikitextSnippet:pg.wikitext.slice(Math.max(0,wi-100),wi+1800),parsed:(()=>{const x=parseWikiAcquisition(pg,debugAk);return {blueprint:x.blueprint,parts:[...x.parts.entries()]};})()}));}
+
  for(const [category,raw] of lists){
   if(!Array.isArray(raw))throw new Error("Dataset inválido para "+category);
   const selected=raw.filter(w=>isMasteryWeapon(w,category));
