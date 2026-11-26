@@ -3,6 +3,7 @@ import path from "node:path";
 
 const BASE="https://raw.githubusercontent.com/WFCD/warframe-items/master/data/json/";
 const CATEGORIES=[["Primary","primary"],["Secondary","secondary"],["Melee","melee"]];
+const DROPS_URL="https://raw.githubusercontent.com/WFCD/warframe-drop-data/main/data/all.json";
 const EXCLUDED=/^(?:Excalibur Prime)$/i;
 async function fetchJson(url){
  const r=await fetch(url,{headers:{"accept":"application/json","user-agent":"Warframe-Checklist-GitHub-Actions"},signal:AbortSignal.timeout(90000)});
@@ -24,7 +25,8 @@ function available(item){
 async function main(){
  const arg=process.argv.indexOf("--output"),output=arg>=0?process.argv[arg+1]:"Content/weapons-data.js";
  if(!output)throw new Error("Informe o caminho de saída.");
- const lists=await Promise.all(CATEGORIES.map(async ([file,category])=>[category,await fetchJson(BASE+file+".json")]));
+ const [lists,drops]=await Promise.all([Promise.all(CATEGORIES.map(async ([file,category])=>[category,await fetchJson(BASE+file+".json")])),fetchJson(DROPS_URL)]);
+ if(!drops||!Array.isArray(drops.blueprintLocations)||!drops.missionRewards||!Array.isArray(drops.relics))throw new Error("Dataset oficial de drops inválido; publicação cancelada.");
  const items=[];
  for(const [category,raw] of lists){
   if(!Array.isArray(raw))throw new Error("Dataset inválido para "+category);
