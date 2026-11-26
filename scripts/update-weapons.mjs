@@ -3,7 +3,6 @@ import path from "node:path";
 
 const BASE="https://raw.githubusercontent.com/WFCD/warframe-items/master/data/json/";
 const CATEGORIES=[["Primary","primary"],["Secondary","secondary"],["Melee","melee"]];
-const DROPS_URL="https://raw.githubusercontent.com/WFCD/warframe-drop-data/main/data/all.json";
 const COMPONENTS_URL=BASE+"Components.json";
 const EXCLUDED=/^(?:Excalibur Prime)$/i;
 
@@ -13,7 +12,6 @@ async function fetchJson(url){
  return r.json();
 }
 const wikiPage=n=>"https://wiki.warframe.com/w/"+encodeURIComponent(String(n||"").trim().replace(/\s+/g,"_"));
-function pageUrl(title){return wikiPage(title);}
 function normalizeDropName(value){
  return String(value||"").replace(/\s+Blueprint$/i,"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
 }
@@ -133,8 +131,6 @@ async function main(){
  const items=[];
  const allRaw=lists.flatMap(([category,raw])=>raw.filter(w=>isMasteryWeapon(w,category)).map(w=>({w,category})));
  const wikiDropLookup=await fetchWikiPages(allRaw.map(x=>x.w));
- const debugAk=allRaw.find(x=>x.w.name==="Akstiletto Prime")?.w;
- if(debugAk){const pg=wikiDropLookup(debugAk),hi=pg.html.indexOf("Acquisition"),wi=pg.wikitext.indexOf("Acquisition");console.log("WIKI SAMPLE",JSON.stringify({htmlLength:pg.html.length,htmlSnippet:pg.html.slice(Math.max(0,hi-200),hi+2400),wikitextLength:pg.wikitext.length,wikitextSnippet:pg.wikitext.slice(Math.max(0,wi-100),wi+1800),parsed:(()=>{const x=parseWikiAcquisition(pg,debugAk);return {blueprint:x.blueprint,parts:[...x.parts.entries()]};})()}));}
 
  for(const [category,raw] of lists){
   if(!Array.isArray(raw))throw new Error("Dataset inválido para "+category);
@@ -146,8 +142,6 @@ async function main(){
    if(!previous||((w.components||[]).length>(previous.components||[]).length))unique.set(w.name,w);
   }
   for(const w of unique.values()){
-   const recipe=(w.components||[]).find(c=>String(c.uniqueName||"").includes("/Recipes/Weapons/")&&String(c.uniqueName).endsWith("Blueprint"));
-   const blueprintName=recipe?displayName(componentMap.get(recipe.uniqueName)||recipe):w.name+" Blueprint";
    const wikiAcquisition=parseWikiAcquisition(wikiDropLookup(w),w);
    const parts=(w.components||[]).filter(isWeaponPart).map(c=>{
     const meta=componentMap.get(c.uniqueName)||c,token=String(c.uniqueName||"").split("/").pop();
@@ -173,6 +167,6 @@ async function main(){
  await fs.writeFile(output,"/* Gerado automaticamente pelo GitHub Actions. */\nwindow.WFC_WEAPONS_SNAPSHOT="+JSON.stringify(data)+";\n","utf8");
  const allParts=items.flatMap(w=>w.parts||[]);
  console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",allParts.length);
- console.log("Dados Wiki:",{paginasConsultadas:allRaw.length,armasComProjetoDrop:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
+ console.log("Dados Wiki:",{paginasConsultadas:allRaw.length,paginasComAquisição:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
 }
 main().catch(e=>{console.error("Geração de armas cancelada:",e);process.exitCode=1;});
