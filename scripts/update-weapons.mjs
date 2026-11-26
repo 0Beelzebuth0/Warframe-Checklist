@@ -30,6 +30,12 @@ function acquisitionHtmlSection(html){
  const start=heading.index+heading[0].length,tail=source.slice(start),next=/<h[23]\b/i.exec(tail);
  return next?tail.slice(0,next.index):tail;
 }
+function acquisitionSection(wikitext){
+ const source=String(wikitext||""),heading=/^==\s*Acquisition\s*==\s*$/mi.exec(source);
+ if(!heading)return "";
+ const start=heading.index+heading[0].length,tail=source.slice(start),next=/^==\s*[^=]/m.exec(tail);
+ return next?tail.slice(0,next.index):tail;
+}
 function parseWikiAcquisition(page,weapon){
  const htmlSection=acquisitionHtmlSection(page?.html),wikitext=String(page?.wikitext||"");
  const result={blueprint:[],parts:new Map()};
