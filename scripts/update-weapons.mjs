@@ -123,5 +123,6 @@ async function main(){
  const allParts=items.flatMap(w=>w.parts||[]);
  console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",allParts.length);
  console.log("Dados Wiki:",{armasComProjetoDrop:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
+ const ak=items.find(w=>w.name==="Akstiletto Prime"); console.log("DEBUG Akstiletto Prime:",JSON.stringify(ak&&{drops:ak.drops,parts:ak.parts}));
 }
 main().catch(e=>{console.error("Geração de armas cancelada:",e);process.exitCode=1;});
