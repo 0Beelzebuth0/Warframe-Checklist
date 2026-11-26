@@ -33,60 +33,92 @@ function stripWikiHtml(value){
  return String(value||"").replace(/<sup[\s\S]*?<\/sup>/gi," ").replace(/<br\s*\/?>/gi," ").replace(/<\/(?:p|li|div|tr|td|th)>/gi," ").replace(/<[^>]*>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g," ").trim();
 }
 function acquisitionHtmlSection(html){
- const source=String(html||""),heading=/<h2\b(?=[^>]*\bid=["']Acquisition["'])[^>]*>[\s\S]*?<\/h2>/i.exec(source);
- if(!heading)return "";
- const start=heading.index+heading[0].length,tail=source.slice(start),next=/<h2\b/i.exec(tail);
+ const source=String(html||"");
+ // MediaWiki normally places id="Acquisition" on a nested .mw-headline span,
+ // not on the h2 element itself. Match the whole heading in either format.
+ const headings=[...source.matchAll(/<h2\b[^>]*>[\s\S]*?<\/h2>/gi)];
+ const index=headings.findIndex(match=>/id\s*=\s*["']Acquisition["']/i.test(match[0])||
+  /(?:^|>)\s*Acquisition\s*(?:<|$)/i.test(stripWikiHtml(match[0])));
+ if(index<0)return "";
+ const heading=headings[index],start=heading.index+heading[0].length,tail=source.slice(start);
+ const next=/<h2\b/i.exec(tail);
  return next?tail.slice(0,next.index):tail;
 }
 function acquisitionSection(wikitext){
- const source=String(wikitext||""),heading=/^==\s*Acquisition\s*==\s*$/mi.exec(source);
+ const source=String(wikitext||"");
+ const heading=/^==\s*Acquisition\s*==\s*$/mi.exec(source);
  if(!heading)return "";
  const start=heading.index+heading[0].length,tail=source.slice(start),next=/^==\s*[^=]/m.exec(tail);
  return next?tail.slice(0,next.index):tail;
 }
 function parseWikiAcquisition(page,weapon){
  const htmlSection=acquisitionHtmlSection(page?.html),wikitext=String(page?.wikitext||"");
- const result={blueprint:[],parts:new Map()};
+ const result={blueprint:[],parts:new Map(),sectionFound:!!htmlSection||!!acquisitionSection(wikitext)};
+ const base=normalizeDropName(weapon.name);
  const add=(key,source,detail,chance=null)=>{
+  if(!key||!source)return;
   const target=key==="blueprint"?result.blueprint:(result.parts.get(key)||[]);
-  if(!target.some(x=>x.source===source&&x.detail===detail))target.push({source,chance,detail,sourceUrl:wikiPage(weapon.name)});
+  if(!target.some(x=>x.source===source&&x.detail===detail&&x.chance===chance))
+   target.push({source,chance,detail,sourceUrl:wikiPage(weapon.name)});
   if(key!=="blueprint")result.parts.set(key,target);
+ };
+ const partKeyFor=value=>{
+  const normalized=normalizeDropName(value);
+  if(!normalized)return "";
+  if(normalized==="blueprint"||normalized==="mainblueprint")return "blueprint";
+  let suffix=normalized.startsWith(base)?normalized.slice(base.length):normalized;
+  suffix=suffix.replace(/blueprint$/,"");
+  if(!suffix&&normalized.includes("blueprint"))return "blueprint";
+  return suffix||"";
+ };
+ const parseChance=value=>{
+  const match=String(value||"").replace(/,/g,".").match(/(\d+(?:\.\d+)?)\s*%?/);
+  if(!match)return null;
+  const n=Number(match[1]);
+  return Number.isFinite(n)&&n>=0&&n<=100?n:null;
  };
  const tables=[...htmlSection.matchAll(/<table\b[\s\S]*?<\/table>/gi)];
  for(const tableMatch of tables){
-  const table=tableMatch[0],rows=[...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
-  if(!rows.length)continue;
+  const rows=[...tableMatch[0].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
   let headers=[];
   for(const row of rows){
    const th=[...row[1].matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map(x=>stripWikiHtml(x[1]));
    if(th.length){headers=th;continue;}
    const cells=[...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(x=>stripWikiHtml(x[1]));
    if(!headers.length||!cells.length)continue;
-   const headerKeys=headers.map(normalizeDropName),itemCol=headerKeys.findIndex(x=>x==="item"||x==="part"),sourceCol=headerKeys.indexOf("source"),chanceCol=headerKeys.indexOf("chance");
+   const headerKeys=headers.map(normalizeDropName);
+   const itemCol=headerKeys.findIndex(x=>["item","part","reward"].includes(x));
+   const sourceCol=headerKeys.indexOf("source"),chanceCol=headerKeys.indexOf("chance");
    if(itemCol>=0&&sourceCol>=0&&chanceCol>=0&&cells[itemCol]&&cells[sourceCol]){
-    const rawItem=cells[itemCol],normalized=normalizeDropName(rawItem),base=normalizeDropName(weapon.name);
-    let partKey=normalized==="blueprint"?"blueprint":(normalized.startsWith(base)?normalized.slice(base.length):normalized);
-    partKey=partKey.replace(/blueprint$/,"");
-    const chanceText=String(cells[chanceCol]||"").replace(/,/g,"."),chanceMatch=chanceText.match(/[0-9]+(?:\.[0-9]+)?/),chance=chanceMatch?Number(chanceMatch[0]):null;
+    const key=partKeyFor(cells[itemCol]);
     const detail=[cells[headerKeys.indexOf("expected")],cells[headerKeys.indexOf("nearlyguaranteed")]].filter(Boolean).join(" · ");
-    if(partKey)add(partKey,cells[sourceCol],detail,chance);
+    add(key,cells[sourceCol],detail,parseChance(cells[chanceCol]));
    }
+   // Prime relic acquisition tables use the component names as column headers.
    cells.forEach((cell,index)=>{
-    const header=normalizeDropName(headers[index]||"");
-    if(!header)return;
-    const key=header==="blueprint"||header==="mainblueprint"?"blueprint":header;
-    for(const m of cell.matchAll(/\b(Lith|Meso|Neo|Axi)\s+([A-Z]\d+)\s+(Common|Uncommon|Rare)(?:\s*\((V|B)\))?/g)){
-     const source=m[1]+" "+m[2]+" Relic";
-     const detail=m[3]+(m[4]==="V"?" · Vaulted":m[4]==="B"?" · Baro Ki'Teer exclusive":"");
-     add(key,source,detail);
+    const key=partKeyFor(headers[index]||"");
+    if(!key||!cell)return;
+    for(const match of cell.matchAll(/\b(Lith|Meso|Neo|Axi)\s+([A-Z]\d+)\s+(Common|Uncommon|Rare)(?:\s*\((V|B)\))?/g)){
+     const source=match[1]+" "+match[2]+" Relic";
+     const detail=match[3]+(match[4]==="V"?" · Vaulted":match[4]==="B"?" · Baro Ki'Teer exclusive":"");
+     add(key,source,detail,null);
     }
    });
   }
  }
- if(!result.blueprint.length){
-  let plain=stripWikiHtml(htmlSection);
-  if(!plain)plain=acquisitionSection(wikitext).replace(/\{\|[\s\S]*?\|\}/g," ").replace(/\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g,"$1").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
-  if(plain&&plain.length<1800)add("blueprint","Weapon Wiki · Acquisition",plain.slice(0,700));
+ // Some Acquisition sections use bullet lists rather than tables. Preserve only
+ // entries that explicitly identify a blueprint or a named weapon component.
+ const knownParts=["barrel","receiver","stock","handle","blade","grip","neuroptics","chassis","systems","string","upperlimb","lowerlimb","ornament","disc","pouch","cartridge","cylinder","rotor","stars","sight","scope","hilt","guard","gauntlet","link","stock"];
+ for(const match of htmlSection.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)){
+  const line=stripWikiHtml(match[1]);
+  if(!line)continue;
+  const normalized=normalizeDropName(line);
+  let key="";
+  if(normalized.includes("blueprint"))key="blueprint";
+  else key=knownParts.find(part=>normalized.includes(part))||"";
+  if(!key)continue;
+  const chance=parseChance(line);
+  add(key,line,"Acquisition (lista da Wiki)",chance);
  }
  return result;
 }
@@ -104,7 +136,7 @@ async function fetchWikiPages(weapons){
    }
   }));
  }
- const templated=[...pages.entries()].filter(([,page])=>{const acq=acquisitionSection(page.wikitext);return /\{\|/.test(acq)||/\{\{\s*(?!BuildAutomatic\b)[^}]+\}\}/i.test(acq);});
+ const templated=[...pages.entries()].filter(([,page])=>{const acq=acquisitionSection(page.wikitext);return !acquisitionHtmlSection(page.html)&&!!acq||/\{\|/.test(acq)||/\{\{\s*(?!BuildAutomatic\b)[^}]+\}\}/i.test(acq);});
  for(let i=0;i<templated.length;i+=2){
   await Promise.all(templated.slice(i,i+2).map(async ([key,page])=>{
    const weaponTitle=titles.find(title=>normalizeDropName(title)===key)||key;
@@ -188,6 +220,6 @@ async function main(){
  await fs.writeFile(output,"/* Gerado automaticamente pelo GitHub Actions. */\nwindow.WFC_WEAPONS_SNAPSHOT="+JSON.stringify(data)+";\n","utf8");
  const allParts=items.flatMap(w=>w.parts||[]);
  console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",allParts.length);
- console.log("Dados Wiki:",{paginasConsultadas:allRaw.length,paginasComAquisição:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
+ console.log("Dados Wiki:",{paginasConsultadas:allRaw.length,paginasComSecaoAcquisition:allRaw.filter(w=>wikiDropLookup(w).sectionFound).length,paginasComDropDeProjeto:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
 }
 main().catch(e=>{console.error("Geração de armas cancelada:",e);process.exitCode=1;});
