@@ -39,4 +39,5 @@ async function update(){
  }
 }
 update();
+setInterval(()=>{cached=null;update();},CACHE_TTL);
 })();
