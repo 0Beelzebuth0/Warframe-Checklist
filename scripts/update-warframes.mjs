@@ -141,6 +141,30 @@ function normalizeWarframes(raw) {
   return asArray(frames, "Warframes.json");
 }
 
+async function wikiThumbnails(names) {
+  const found = new Map();
+  const unique = [...new Set(names.filter(Boolean))];
+  for (let i = 0; i < unique.length; i += 40) {
+    const batch = unique.slice(i, i + 40);
+    const url = "https://wiki.warframe.com/api.php?action=query&format=json&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=800&titles=" +
+      encodeURIComponent(batch.join("|"));
+    try {
+      const response = await fetch(url, {
+        headers: { "accept": "application/json", "user-agent": "Warframe-Checklist-GitHub-Actions" },
+        signal: AbortSignal.timeout(45000)
+      });
+      if (!response.ok) throw new Error("Wiki API HTTP " + response.status);
+      const json = await response.json();
+      for (const page of Object.values(json.query?.pages || {})) {
+        if (page.title && page.thumbnail?.source) found.set(page.title.toLowerCase(), page.thumbnail.source);
+      }
+    } catch (error) {
+      console.warn("Não foi possível consultar miniaturas da Wiki (lote " + (i / 40 + 1) + "):", error.message);
+    }
+  }
+  return found;
+}
+
 async function main() {
   const outputArg = process.argv.indexOf("--output");
   const outputPath = outputArg >= 0 ? process.argv[outputArg + 1] : "Content/warframes-data.js";
@@ -159,6 +183,7 @@ async function main() {
   }
 
   const frames = normalizeWarframes(rawFrames);
+  const wikiImages = await wikiThumbnails(frames.filter(frame => frame?.type === "Warframe").map(frame => frame.name));
   const items = [];
 
   for (const frame of frames) {
@@ -174,9 +199,8 @@ async function main() {
     if (frame.isPrime && !parts.some(part => part.drops.length > 0)) continue;
 
     const imageFile = frame.imageName || "";
-    const image = imageFile
-      ? "https://wiki.warframe.com/w/Special:Redirect/file/" + encodeURIComponent(imageFile) + "?width=640"
-      : "";
+    const image = wikiImages.get(String(frame.name).toLowerCase()) ||
+      (imageFile ? "https://wiki.warframe.com/w/Special:Redirect/file/" + encodeURIComponent(imageFile) + "?width=640" : "");
 
     items.push({
       id: frame.uniqueName,
