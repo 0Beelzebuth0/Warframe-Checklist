@@ -37,8 +37,9 @@ jobs:
           mkdir -p _site/Content
           touch _site/.nojekyll
 
-      - name: Generate and validate Warframe data
-        run: node scripts/update-warframes.mjs --output _site/Content/warframes-data.js
+      - name: Generate and validate Warframe and weapon data
+        run: |
+          node scripts/update-warframes.mjs --output _site/Content/warframes-data.js
           node scripts/update-weapons.mjs --output _site/Content/weapons-data.js
 
       - name: Configure GitHub Pages
