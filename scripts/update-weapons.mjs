@@ -116,6 +116,8 @@ async function main(){
  const data={items,counts,updatedAt:new Date().toISOString(),source:"WFCD mastery weapon catalogue + Warframe Wiki media + parsed Digital Extremes drop tables",sourceUrl:"https://wiki.warframe.com/w/Mastery_Rank_Checklist"};
  await fs.mkdir(path.dirname(output),{recursive:true});
  await fs.writeFile(output,"/* Gerado automaticamente pelo GitHub Actions. */\nwindow.WFC_WEAPONS_SNAPSHOT="+JSON.stringify(data)+";\n","utf8");
- console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",items.reduce((n,w)=>n+w.parts.length,0));
+ const allParts=items.flatMap(w=>w.parts||[]);
+ console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",allParts.length);
+ console.log("Dados Wiki:",{armasComProjetoDrop:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
 }
 main().catch(e=>{console.error("Geração de armas cancelada:",e);process.exitCode=1;});
