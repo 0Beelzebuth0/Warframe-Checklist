@@ -92,8 +92,8 @@ function parseWikiAcquisition(page,weapon){
    const cells=[...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(x=>stripWikiHtml(x[1]));
    if(!cells.length)continue;
    const headerKeys=headers.map(normalizeDropName);
-   const itemCol=headerKeys.findIndex(x=>["item","part","reward","component","blueprint"].includes(x));
-   const sourceCol=headerKeys.findIndex(x=>["source","dropsource","droplocation","location","mission","relic"].includes(x));
+   const itemCol=headerKeys.findIndex(x=>["item","itemname","part","partname","reward","component","componentname","blueprint"].includes(x));
+   const sourceCol=headerKeys.findIndex(x=>["source","dropsource","droplocation","location","mission"].includes(x));
    const chanceCol=headerKeys.findIndex(x=>["chance","dropchance","droprate","probability"].includes(x));
    if(itemCol>=0&&cells[itemCol]){
     const key=partKeyFor(cells[itemCol]);
