@@ -204,3 +204,38 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 /* Keep the card header and its master checkbox aligned on narrow screens too. */
 .wf-head{flex-direction:row}
 .wf-expander{min-width:0}
+
+
+/* Warframe checklist polish: stable image layout, consistent part panels and compact drop lists. */
+.wf-name-line{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+.wf-name-line strong{min-width:0}
+.wf-wiki{font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:3px 7px;white-space:nowrap}
+.wf-wiki:hover{color:var(--gold);border-color:var(--gold)}
+.wf-image{background:#0e141d;object-fit:contain}
+.wf-image.image-failed{visibility:hidden}
+.wf-parts{align-items:stretch}
+.wf-part{box-sizing:border-box;min-width:0;min-height:100%;border-right:1px solid var(--line);border-bottom:0;gap:12px}
+.wf-part:last-child{border-right:0}
+.wf-part-title{display:flex;align-items:center;gap:10px;min-height:44px}
+.wf-part-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:48px;height:42px;flex:none;border:1px solid #52657e;border-radius:8px;background:#182333;overflow:hidden}
+.wf-part-icon svg{width:40px;height:34px;position:relative;z-index:1}
+.wf-part-icon i{position:absolute;inset:0;opacity:.25}
+.wf-part-icon.prime{border-color:#b99a59;box-shadow:inset 0 0 14px #d8b66a20}
+.wf-prime-tag{font-size:9px;letter-spacing:.08em;color:#e6c477;border:1px solid #9b7a3d;border-radius:4px;padding:2px 4px;vertical-align:middle}
+.wf-drops{min-width:0}
+.wf-drops.has-many{max-height:260px;overflow-y:auto;overscroll-behavior:contain;padding-right:5px;scrollbar-width:thin;scrollbar-color:#65758a #111722}
+.wf-drops.has-many::-webkit-scrollbar{width:7px}
+.wf-drops.has-many::-webkit-scrollbar-track{background:#111722;border-radius:8px}
+.wf-drops.has-many::-webkit-scrollbar-thumb{background:#65758a;border-radius:8px}
+.wf-drop{min-width:0;overflow-wrap:anywhere}
+.wf-drop a{width:max-content;max-width:100%}
+.wf-check{margin-top:auto}
+@media(max-width:760px){
+  .wf-parts{grid-template-columns:1fr}
+  .wf-part{border-right:0;border-bottom:1px solid var(--line);padding:14px 16px}
+  .wf-part:last-child{border-bottom:0}
+}
+@media(min-width:761px){
+  .wf-part{padding:16px}
+  .wf-part-title{padding-bottom:4px;border-bottom:1px solid #ffffff12}
+}

@@ -148,6 +148,16 @@ function importProgress(file) {
 }
 
 
+function partIcon(partId, isPrime) {
+  const color = isPrime ? "#e6c477" : "#9eb5ca";
+  const bg = isPrime ? "#3a3020" : "#202d3b";
+  const shapes = {
+    neuroptics: '<path d="M20 8l5-4 5 4 3 9-8 5-8-5z"/><path d="M17 14h16M20 8l5 13M30 8l-5 13"/>',
+    chassis: '<path d="M20 4h10l4 7-4 6v14H20V17l-4-6z"/><path d="M20 17h10M20 24h10M16 11h18"/>',
+    systems: '<rect x="16" y="7" width="18" height="24" rx="3"/><path d="M20 12h10M20 18h10M20 24h5M12 13h4m18 0h4M12 25h4m18 0h4"/>'
+  };
+  return '<span class="wf-part-icon'+(isPrime?' prime':'')+'" aria-hidden="true"><svg viewBox="0 0 50 40" focusable="false"><g fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(shapes[partId]||shapes.chassis)+'</g><path d="M3 35h44" stroke="'+color+'" opacity=".35"/></svg><i style="background:'+bg+'"></i></span>';
+}
 function renderWarframesModule(host, id, focusKey) {
   const m=WFC.mods[id]; if(!m)return;
   let q="", filter="all";
@@ -155,39 +165,75 @@ function renderWarframesModule(host, id, focusKey) {
   if(focusKey){const focused=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(focused)openFrames.add(focused.id);}
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid" class="wf-grid"></div><div class="foot">'+esc(t("save"))+'</div>';
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><span class="stat" id="wfStat"></span></div><div class="bar"><i id="wfBar"></i></div><div class="tools-block"><div class="search-row"><input class="search" id="wfSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-wf-filter="all">'+esc(t("fAll"))+'</button><button class="btn" data-wf-filter="done">'+esc(t("fDone"))+'</button><button class="btn" data-wf-filter="pend">'+esc(t("fPend"))+'</button></div></div></div><div class="wf-grid" id="wfGrid"></div><p class="subtle" id="wfNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
   const grid=host.querySelector("#wfGrid");
-  function render(){
-    const s=stats(m), p=pct(s.d,s.t), nq=norm(q);
-    host.querySelector("#wfStat").textContent=t("cDone",{d:s.d,t:s.t})+" · "+p+"%";
-    host.querySelector("#wfBar").style.width=p+"%";
-    host.querySelectorAll("[data-wf-filter]").forEach(b=>b.classList.toggle("on",b.dataset.wfFilter===filter));
-    const rows=m.items.filter(f=>{const d=(f.parts||[]).filter(x=>done[f.key+":"+x.id]).length;return (filter==="all"||(filter==="done"&&d===3)||(filter==="pend"&&d<3))&&(!nq||norm(f.name).includes(nq));});
-    grid.innerHTML=rows.map(f=>{
-      const d=f.parts.filter(x=>done[f.key+":"+x.id]).length, fp=Math.round(d/3*100), isOpen=openFrames.has(f.id);
-      const parts=f.parts.map(part=>{
-        const drops=part.drops||[];
-        const dropHtml=drops.length?drops.map(drop=>'<div class="wf-drop"><span>'+esc(drop.source)+'</span><strong>'+(drop.chance==null?esc(t("wfChanceUnknown")):esc(String(drop.chance).replace(".",",")+"%"))+'</strong>'+(drop.detail?'<small>'+esc(drop.detail)+'</small>':"")+'<a href="'+esc(drop.sourceUrl||f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
-        return '<section class="wf-part"><div class="wf-part-title">'+esc(part.label)+'</div><div class="wf-drops">'+dropHtml+'</div><label class="wf-check"><input type="checkbox" data-part="'+esc(f.key+":"+part.id)+'" '+(done[f.key+":"+part.id]?"checked":"")+'><span>'+esc(t("check"))+'</span></label></section>';
-      }).join("");
-      return '<article class="wf-card'+(d===3?' done':'')+(isOpen?' expanded':'')+'" data-wf-id="'+esc(f.id)+'"><div class="wf-head"><button type="button" class="wf-expander" data-expand="'+esc(f.id)+'" aria-expanded="'+isOpen+'"><img class="wf-image" src="'+esc(f.image||"")+'" alt="'+esc(f.name)+'" loading="lazy"><span class="wf-title"><strong>'+esc(f.name)+'</strong><small>'+d+'/3 · '+fp+'%</small><span class="bar sm"><i style="width:'+fp+'%"></i></span></span><span class="wf-chevron" aria-hidden="true">›</span></button><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-frame="'+esc(f.id)+'" '+(d===3?"checked":"")+' aria-label="'+esc(t("check"))+' '+esc(f.name)+'"><span></span></label></div><div class="wf-parts"'+(isOpen?'':' hidden')+'><div class="wf-detail-top"><a class="wiki" href="'+esc(f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a></div>'+parts+'</div></article>';
-    }).join("")||'<p class="subtle">'+esc(t("noRes"))+'</p>';
-    grid.querySelectorAll("[data-expand]").forEach(btn=>btn.onclick=()=>{
-      const key=btn.dataset.expand;
+  const cards=new Map();
+  function makeCard(f) {
+    const card=document.createElement("article");
+    card.className="wf-card";
+    card.dataset.wfId=f.id;
+    const parts=(f.parts||[]).map(part=>{
+      const drops=part.drops||[];
+      const dropHtml=drops.length?drops.map(drop=>'<div class="wf-drop"><span>'+esc(drop.source)+'</span><strong>'+(drop.chance==null?esc(t("wfChanceUnknown")):esc(String(drop.chance).replace(".",",")+"%"))+'</strong>'+(drop.detail?'<small>'+esc(drop.detail)+'</small>':"")+'<a href="'+esc(drop.sourceUrl||f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener">'+esc(t("wfSource"))+'</a></div>').join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
+      return '<section class="wf-part" data-part-id="'+esc(part.id)+'"><div class="wf-part-title">'+partIcon(part.id,!!f.isPrime)+'<span>'+esc(part.label)+(f.isPrime?' <small class="wf-prime-tag">PRIME</small>':"")+'</span></div><div class="wf-drops'+(drops.length>3?' has-many':'')+'">'+dropHtml+'</div><label class="wf-check"><input type="checkbox" data-part="'+esc(f.key+":"+part.id)+'"><span>'+esc(t("check"))+'</span></label></section>';
+    }).join("");
+    card.innerHTML='<div class="wf-head"><button type="button" class="wf-expander" data-expand="'+esc(f.id)+'" aria-expanded="false"><img class="wf-image" alt="'+esc(f.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(f.name)+'</strong><a class="wf-wiki" href="'+esc(f.wikiUrl||wikiPage(f.name))+'" target="_blank" rel="noopener" aria-label="'+esc(t("wiki"))+'">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count"></small><span class="bar sm"><i></i></span></span><span class="wf-chevron" aria-hidden="true">›</span></button><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-frame="'+esc(f.id)+'" aria-label="'+esc(t("check"))+' '+esc(f.name)+'"><span></span></label></div><div class="wf-parts" hidden>'+parts+'</div>';
+    const img=card.querySelector(".wf-image");
+    const imageUrl=f.image||"";
+    if(imageUrl && img.dataset.src!==imageUrl){img.dataset.src=imageUrl;img.src=imageUrl;}
+    img.onerror=()=>{img.classList.add("image-failed");img.removeAttribute("src");};
+    card.querySelector("[data-expand]").onclick=()=>{
+      const key=f.id;
       if(openFrames.has(key))openFrames.delete(key);else openFrames.add(key);
-      const card=btn.closest(".wf-card"), body=card.querySelector(".wf-parts"), opened=openFrames.has(key);
-      body.hidden=!opened;btn.setAttribute("aria-expanded",String(opened));card.classList.toggle("expanded",opened);
-    });
-    grid.querySelectorAll("input[data-frame]").forEach(cb=>cb.onchange=()=>{
-      const f=m.items.find(x=>x.id===cb.dataset.frame);if(!f)return;
-      f.parts.forEach(part=>{const key=f.key+":"+part.id;if(cb.checked)done[key]=true;else delete done[key];});
+      updateCard(f,card);
+    };
+    card.querySelector('input[data-frame]').onchange=e=>{
+      const checked=e.currentTarget.checked;
+      f.parts.forEach(part=>{const key=f.key+":"+part.id;if(checked)done[key]=true;else delete done[key];});
       save();render();
-    });
-    grid.querySelectorAll("input[data-part]").forEach(cb=>cb.onchange=()=>{
+    };
+    card.querySelectorAll("input[data-part]").forEach(cb=>cb.onchange=()=>{
       if(cb.checked)done[cb.dataset.part]=true;else delete done[cb.dataset.part];
       save();render();
     });
-    if(focusKey){const target=m.items.find(f=>f.key===focusKey||f.id===focusKey);if(target)openFrames.add(target.id);}
+    return card;
+  }
+  function updateCard(f,card) {
+    const d=(f.parts||[]).filter(part=>done[f.key+":"+part.id]).length;
+    const fp=Math.round(d/3*100),opened=openFrames.has(f.id);
+    card.classList.toggle("done",d===3);
+    card.classList.toggle("expanded",opened);
+    const btn=card.querySelector("[data-expand]");
+    btn.setAttribute("aria-expanded",String(opened));
+    card.querySelector(".wf-parts").hidden=!opened;
+    card.querySelector(".wf-count").textContent=d+"/3 · "+fp+"%";
+    card.querySelector(".wf-title .bar i").style.width=fp+"%";
+    const master=card.querySelector('input[data-frame]');
+    master.checked=d===3;
+    card.querySelectorAll("input[data-part]").forEach(cb=>{cb.checked=!!done[cb.dataset.part];});
+  }
+  m.items.forEach(f=>{
+    const card=makeCard(f);
+    cards.set(f.id,card);
+    grid.appendChild(card);
+  });
+  function render(){
+    const s=stats(m),p=pct(s.d,s.t),nq=norm(q);
+    host.querySelector("#wfStat").textContent=t("cDone",{d:s.d,t:s.t})+" · "+p+"%";
+    host.querySelector("#wfBar").style.width=p+"%";
+    host.querySelectorAll("[data-wf-filter]").forEach(b=>b.classList.toggle("on",b.dataset.wfFilter===filter));
+    let visible=0;
+    m.items.forEach(f=>{
+      const card=cards.get(f.id);
+      const d=(f.parts||[]).filter(part=>done[f.key+":"+part.id]).length;
+      const matches=(filter==="all"||(filter==="done"&&d===3)||(filter==="pend"&&d<3))&&(!nq||norm(f.name).includes(nq));
+      card.hidden=!matches;
+      if(matches)visible++;
+      updateCard(f,card);
+    });
+    const empty=host.querySelector("#wfNoResults");
+    empty.hidden=visible>0;
+    empty.textContent=t("noRes");
   }
   host.querySelector("#wfSearch").oninput=e=>{q=e.target.value;render();};
   host.querySelectorAll("[data-wf-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.wfFilter;render();});
