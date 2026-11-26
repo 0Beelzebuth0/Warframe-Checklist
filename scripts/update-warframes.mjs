@@ -1,0 +1,214 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+
+const WARFRAMES_URL = "https://raw.githubusercontent.com/WFCD/warframe-items/master/data/json/Warframes.json";
+const DROPS_URL = "https://drops.warframestat.us/data/all.json";
+const OFFICIAL_TABLES = "https://www.warframe.com/droptables";
+const EXCLUDED = new Set(["Excalibur Prime"]);
+const PARTS = [
+  ["neuroptics", "Neuroptics"],
+  ["chassis", "Chassis"],
+  ["systems", "Systems"]
+];
+
+async function fetchJson(url) {
+  const response = await fetch(url, {
+    headers: { "accept": "application/json", "user-agent": "Warframe-Checklist-GitHub-Actions" },
+    signal: AbortSignal.timeout(90000)
+  });
+  if (!response.ok) throw new Error("HTTP " + response.status + " ao consultar " + url);
+  return response.json();
+}
+
+function asArray(value, label) {
+  if (!Array.isArray(value)) throw new Error("Formato inesperado: " + label + " não é uma lista.");
+  return value;
+}
+
+function asNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
+}
+
+function unwrap(data, key) {
+  const value = data[key];
+  return value && !Array.isArray(value) && typeof value === "object" && key in value ? value[key] : value;
+}
+
+function buildDrops(itemName, data) {
+  const out = [];
+  const seen = new Set();
+  const add = (source, chance, detail = "") => {
+    const normalizedChance = asNumber(chance);
+    const key = [source, normalizedChance, detail].join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({
+      source: String(source || "Fonte não identificada"),
+      chance: normalizedChance,
+      detail: String(detail || ""),
+      sourceUrl: OFFICIAL_TABLES
+    });
+  };
+
+  for (const entry of asArray(unwrap(data, "blueprintLocations"), "blueprintLocations")) {
+    if (entry?.itemName !== itemName) continue;
+    for (const enemy of entry.enemies || []) {
+      const withinTable = asNumber(enemy.chance);
+      const enemyTableChance = asNumber(enemy.enemyItemDropChance);
+      const totalChance = withinTable !== null && enemyTableChance !== null
+        ? withinTable * enemyTableChance / 100
+        : withinTable;
+      const detail = [
+        withinTable !== null ? "Chance na tabela: " + withinTable + "%" : "",
+        enemyTableChance !== null ? "Chance de drop de item: " + enemyTableChance + "%" : "",
+        enemy.rarity || ""
+      ].filter(Boolean).join(" · ");
+      add(enemy.enemyName || "Inimigo", totalChance, detail);
+    }
+  }
+
+  const missions = unwrap(data, "missionRewards") || {};
+  for (const [planet, nodes] of Object.entries(missions)) {
+    for (const [node, mission] of Object.entries(nodes || {})) {
+      for (const [rotation, rewards] of Object.entries(mission?.rewards || {})) {
+        for (const reward of Array.isArray(rewards) ? rewards : []) {
+          if (reward?.itemName === itemName) {
+            add(planet + " · " + node, reward.chance,
+              "Rotação " + rotation + (reward.rarity ? " · " + reward.rarity : ""));
+          }
+        }
+      }
+    }
+  }
+
+  for (const relic of asArray(unwrap(data, "relics"), "relics")) {
+    if (!relic) continue;
+    const rewards = Array.isArray(relic.rewards)
+      ? relic.rewards
+      : Object.values(relic.rewards || {}).flat();
+    for (const reward of rewards) {
+      if (reward?.itemName === itemName) {
+        add([relic.tier, relic.relicName].filter(Boolean).join(" ") || "Relíquia",
+          reward.chance,
+          "Refinamento " + (relic.state || "não especificado") +
+          (reward.rarity ? " · " + reward.rarity : ""));
+      }
+    }
+  }
+
+  for (const key of ["cetusBountyRewards", "solarisBountyRewards", "deimosRewards", "zarimanRewards"]) {
+    const entries = unwrap(data, key);
+    if (!Array.isArray(entries)) continue;
+    for (const entry of entries) {
+      for (const [rotation, rewards] of Object.entries(entry?.rewards || {})) {
+        for (const reward of Array.isArray(rewards) ? rewards : []) {
+          if (reward?.itemName === itemName) {
+            add(entry.bountyLevel || entry.objectiveName || key, reward.chance,
+              [reward.stage || "", rotation, reward.rarity || ""].filter(Boolean).join(" · "));
+          }
+        }
+      }
+    }
+  }
+
+  const transient = unwrap(data, "transientRewards");
+  if (Array.isArray(transient)) {
+    for (const entry of transient) {
+      const rewards = Array.isArray(entry?.rewards)
+        ? entry.rewards
+        : Object.values(entry?.rewards || {}).flat();
+      for (const reward of rewards) {
+        if (reward?.itemName === itemName) {
+          add(entry.objectiveName || "Recompensa especial", reward.chance,
+            reward.rarity || "");
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
+function normalizeWarframes(raw) {
+  const frames = Array.isArray(raw) ? raw : raw?.Warframes;
+  return asArray(frames, "Warframes.json");
+}
+
+async function main() {
+  const outputArg = process.argv.indexOf("--output");
+  const outputPath = outputArg >= 0 ? process.argv[outputArg + 1] : "Content/warframes-data.js";
+  if (!outputPath) throw new Error("Informe o caminho de saída após --output.");
+
+  const [rawFrames, drops] = await Promise.all([
+    fetchJson(WARFRAMES_URL),
+    fetchJson(DROPS_URL)
+  ]);
+
+  for (const key of ["blueprintLocations", "relics"]) {
+    if (!Array.isArray(unwrap(drops, key))) throw new Error("Dataset de drops inválido: " + key);
+  }
+  if (!unwrap(drops, "missionRewards") || typeof unwrap(drops, "missionRewards") !== "object") {
+    throw new Error("Dataset de drops inválido: missionRewards.");
+  }
+
+  const frames = normalizeWarframes(rawFrames);
+  const items = [];
+
+  for (const frame of frames) {
+    if (frame?.type !== "Warframe" || !frame.masterable || !frame.uniqueName ||
+        !frame.name || EXCLUDED.has(frame.name)) continue;
+
+    const parts = PARTS.map(([id, label]) => {
+      const itemName = frame.name + " " + label + " Blueprint";
+      return { id, label, drops: buildDrops(itemName, drops) };
+    });
+
+    // Warframes Prime só entram quando pelo menos uma peça tem uma fonte de obtenção atual.
+    if (frame.isPrime && !parts.some(part => part.drops.length > 0)) continue;
+
+    const imageFile = frame.imageName || "";
+    const image = imageFile
+      ? "https://wiki.warframe.com/w/Special:Redirect/file/" + encodeURIComponent(imageFile) + "?width=640"
+      : "";
+
+    items.push({
+      id: frame.uniqueName,
+      name: frame.name,
+      description: frame.description || "",
+      image,
+      wikiUrl: frame.wikiaUrl || "https://wiki.warframe.com/w/" + encodeURIComponent(frame.name.replace(/ /g, "_")),
+      parts,
+      isPrime: !!frame.isPrime
+    });
+  }
+
+  if (items.length < 30) {
+    throw new Error("A validação encontrou apenas " + items.length + " Warframes; publicação cancelada para proteger os dados existentes.");
+  }
+  if (items.some(frame => frame.parts.length !== 3 || frame.parts.some(part => !Array.isArray(part.drops)))) {
+    throw new Error("A validação estrutural dos componentes falhou.");
+  }
+
+  items.sort((a, b) => a.name.localeCompare(b.name));
+  const data = {
+    items,
+    updatedAt: new Date().toISOString(),
+    source: "WFCD Warframe Items + WFCD parser of Digital Extremes official drop tables",
+    sourceUrl: OFFICIAL_TABLES
+  };
+
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  await fs.writeFile(outputPath,
+    "/* Gerado automaticamente pelo GitHub Actions. Não edite manualmente. */\n" +
+    "window.WFC_WARFRAMES_SNAPSHOT=" + JSON.stringify(data) + ";\n",
+    "utf8"
+  );
+  console.log("Dados validados: " + items.length + " Warframes; arquivo: " + outputPath);
+}
+
+main().catch(error => {
+  console.error("Atualização dos Warframes cancelada:", error);
+  process.exitCode = 1;
+});
