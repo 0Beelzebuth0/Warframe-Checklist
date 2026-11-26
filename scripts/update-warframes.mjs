@@ -165,6 +165,18 @@ async function wikiThumbnails(names) {
   return found;
 }
 
+function componentIconFile(partId, isPrime) {
+  const files = {
+    neuroptics: isPrime ? "PrimeHelmet.png" : "Helmet.png",
+    chassis: isPrime ? "PrimeChassis.png" : "Chassis.png",
+    systems: isPrime ? "PrimeSystems.png" : "Systems.png"
+  };
+  return files[partId] || "";
+}
+
+const wikiPartFile = file => "https://wiki.warframe.com/w/Special:Redirect/file/" +
+  encodeURIComponent(file) + "?width=180";
+
 async function main() {
   const outputArg = process.argv.indexOf("--output");
   const outputPath = outputArg >= 0 ? process.argv[outputArg + 1] : "Content/warframes-data.js";
@@ -184,6 +196,7 @@ async function main() {
 
   const frames = normalizeWarframes(rawFrames);
   const wikiImages = await wikiThumbnails(frames.filter(frame => frame?.type === "Warframe").map(frame => frame.name));
+
   const items = [];
 
   for (const frame of frames) {
@@ -192,7 +205,7 @@ async function main() {
 
     const parts = PARTS.map(([id, label]) => {
       const itemName = frame.name + " " + label + " Blueprint";
-      return { id, label, drops: buildDrops(itemName, drops) };
+      return { id, label, image: wikiPartFile(componentIconFile(id, frame.isPrime)), drops: buildDrops(itemName, drops) };
     });
 
     // Warframes Prime só entram quando pelo menos uma peça tem uma fonte de obtenção atual.

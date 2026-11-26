@@ -239,3 +239,14 @@ h2.sec{font-size:24px;margin:36px 0 2px}
   .wf-part{padding:16px}
   .wf-part-title{padding-bottom:4px;border-bottom:1px solid #ffffff12}
 }
+
+/* Warframes: put the Wiki link below long names and add the section-wide mark-all control. */
+.wf-name-line{flex-direction:column;align-items:flex-start;gap:5px}
+.wf-name-line strong{max-width:100%;overflow-wrap:anywhere;line-height:1.25}
+.wf-wiki{white-space:normal;max-width:100%}
+.wf-tools-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.wf-tools-row .search{flex:1 1 220px;min-width:180px;max-width:none}
+.wf-tools-row .filter-group{flex:0 0 auto}
+.wf-mark-all{margin-left:auto;white-space:nowrap}
+.wf-part-image{width:48px;height:48px;object-fit:contain;flex:none;border:1px solid #52657e;border-radius:8px;background:#0e141d;padding:3px}
+@media(max-width:760px){.wf-tools-row .filter-group{width:100%}.wf-mark-all{margin-left:0}}
