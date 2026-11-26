@@ -7,11 +7,12 @@ const TABLE_URL="https://www.warframe.com/droptables";
 function num(v){const n=Number(v);return Number.isFinite(n)?n:null;}
 function findDrops(itemName,data){
  const out=[],seen=new Set();
+ const get=key=>{const value=data[key];return value&&value[key]?value[key]:value;};
  const add=(source,chance,detail="")=>{
   const k=[source,chance,detail].join("|");if(seen.has(k))return;seen.add(k);
   out.push({source,chance,detail,sourceUrl:TABLE_URL});
  };
- for(const entry of data.blueprintLocations||[]){
+ for(const entry of get("blueprintLocations")||[]){
   if(entry.itemName!==itemName)continue;
   for(const enemy of entry.enemies||[]){
    const itemChance=num(enemy.chance),tableChance=num(enemy.enemyItemDropChance);
@@ -20,7 +21,7 @@ function findDrops(itemName,data){
    add(enemy.enemyName||"Inimigo",chance,detail);
   }
  }
- const missions=data.missionRewards||{};
+ const missions=get("missionRewards")||{};
  for(const [planet,nodes] of Object.entries(missions)){
   for(const [node,mission] of Object.entries(nodes||{})){
    for(const [rotation,rewards] of Object.entries(mission.rewards||{})){
@@ -28,12 +29,12 @@ function findDrops(itemName,data){
    }
   }
  }
- for(const relic of data.relics||[]){
+ for(const relic of get("relics")||[]){
   const states=Array.isArray(relic.rewards)?[[relic.state||"Intact",relic.rewards]]:Object.entries(relic.rewards||{});
   for(const [refinement,rewards] of states)for(const reward of rewards||[])if(reward.itemName===itemName)add((relic.tier||"") +" "+(relic.relicName||"Relíquia"),num(reward.chance),"Refinamento "+refinement+(reward.rarity?" · "+reward.rarity:""));
  }
  for(const key of ["cetusBountyRewards","solarisBountyRewards","zarimanRewards","transientRewards"]){
-  for(const entry of data[key]||[]){
+  for(const entry of get(key)||[]){
    for(const [rotation,rewards] of Object.entries(entry.rewards||{})){
     for(const reward of rewards||[])if(reward.itemName===itemName)add(entry.bountyLevel||entry.objectiveName||key,num(reward.chance),[reward.stage||"",rotation,reward.rarity||""].filter(Boolean).join(" · "));
    }
