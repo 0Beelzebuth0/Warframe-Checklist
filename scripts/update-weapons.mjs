@@ -172,7 +172,22 @@ async function fetchWikiPages(weapons){
   }));
   await sleep(350);
  }
- console.log("Páginas Wiki renderizadas para tabelas de aquisição:",templated.length);
+ // Some Wiki pages expose the Acquisition heading only in the fully rendered page.
+ // The extracts endpoint can omit section headings for pages without tables/templates,
+ // so render any page whose Acquisition section is still not detectable.
+ const missingRendered=[...pages.entries()].filter(([,page])=>!acquisitionHtmlSection(page.html)&&!acquisitionSection(page.wikitext));
+ let fallbackRendered=0;
+ for(let i=0;i<missingRendered.length;i+=3){
+  await Promise.all(missingRendered.slice(i,i+3).map(async ([key,page])=>{
+   const title=page.title||titles.find(x=>normalizeDropName(x)===key)||key;
+   const url="https://wiki.warframe.com/api.php?action=parse&format=json&prop=text&page="+encodeURIComponent(title);
+   const rendered=await fetchJson(url);
+   const html=rendered.parse?.text?.["*"]??rendered.parse?.text??"";
+   if(html){pages.set(key,{...page,html});fallbackRendered++;}
+  }));
+  await sleep(350);
+ }
+ console.log("Páginas Wiki renderizadas para tabelas de aquisição:",templated.length+fallbackRendered,"(renderização complementar:",fallbackRendered,")");
 
  if(pages.size<Math.min(100,titles.length*0.5))throw new Error("A Wiki não retornou páginas suficientes para validar as aquisições ("+pages.size+"/"+titles.length+").");
  return weapon=>pages.get(normalizeDropName(wikiTitle(weapon)))||{html:"",wikitext:""};
