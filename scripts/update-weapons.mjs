@@ -101,8 +101,10 @@ async function main(){
    const recipe=(w.components||[]).find(c=>String(c.uniqueName||"").includes("/Recipes/Weapons/")&&String(c.uniqueName).endsWith("Blueprint"));
    const blueprintName=recipe?displayName(componentMap.get(recipe.uniqueName)||recipe):w.name+" Blueprint";
    const parts=(w.components||[]).filter(isWeaponPart).map(c=>{
-    const meta=componentMap.get(c.uniqueName)||c,name=displayName(meta);
-    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:meta.wikiaUrl||wikiPage(name),drops:getDrops(name)};
+    const meta=componentMap.get(c.uniqueName)||c,token=String(c.uniqueName||"").split("/").pop();
+    const compact=normalizeDropName(w.name),suffix=token.toLowerCase().startsWith(compact)?token.slice(compact.length).replace(/([a-z])([A-Z])/g,"$1 $2").trim():"";
+    const fallback=displayName(meta),name=suffix?w.name+" "+suffix:(normalizeDropName(fallback).startsWith(compact)?fallback:w.name+" "+fallback);
+    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:getDrops(name)};
    });
    items.push({
     id:w.uniqueName,name:w.name,category,
@@ -123,6 +125,5 @@ async function main(){
  const allParts=items.flatMap(w=>w.parts||[]);
  console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",allParts.length);
  console.log("Dados Wiki:",{armasComProjetoDrop:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
- const ak=items.find(w=>w.name==="Akstiletto Prime"); console.log("DEBUG Akstiletto Prime:",JSON.stringify(ak&&{drops:ak.drops,parts:ak.parts}));
 }
 main().catch(e=>{console.error("Geração de armas cancelada:",e);process.exitCode=1;});
