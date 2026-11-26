@@ -64,7 +64,6 @@ function parseWikiAcquisition(page,weapon){
  };
  const partKeyFor=value=>{
   const raw=String(value||"");
-  if(/\\bblueprint\\b/i.test(raw))return "blueprint";
   let normalized=normalizeDropName(raw);
   if(!normalized)return "";
   let suffix=normalized.startsWith(base)?normalized.slice(base.length):normalized;
@@ -72,6 +71,7 @@ function parseWikiAcquisition(page,weapon){
   const aliases={gunchassis:"chassis",weaponchassis:"chassis",mainblueprint:"blueprint",receiver:"receiver",barrel:"barrel",stock:"stock",handle:"handle",blade:"blade",grip:"grip",neuroptics:"neuroptics",systems:"systems",string:"string",upperlimb:"upperlimb",lowerlimb:"lowerlimb",ornament:"ornament",disc:"disc",pouch:"pouch",cartridge:"cartridge",cylinder:"cylinder",rotor:"rotor",stars:"stars",sight:"sight",scope:"scope",hilt:"hilt",guard:"guard",gauntlet:"gauntlet",link:"link"};
   if(aliases[suffix])return aliases[suffix];
   if(aliases[normalized])return aliases[normalized];
+  if(!suffix&&/\\bblueprint\\b/i.test(raw))return "blueprint";
   return suffix||"";
  };
  const parseChance=value=>{
@@ -122,7 +122,8 @@ function parseWikiAcquisition(page,weapon){
  }
  // Acquisition pages may use lists instead of tables. Keep only explicit item/component lines.
  const knownParts=["barrel","receiver","stock","handle","blade","grip","neuroptics","chassis","systems","string","upperlimb","lowerlimb","ornament","disc","pouch","cartridge","cylinder","rotor","stars","sight","scope","hilt","guard","gauntlet","link"];
- const listLines=[...htmlSection.matchAll(/<(?:li|p)\\b[^>]*>([\\s\\S]*?)<\\/(?:li|p)>/gi)].map(match=>stripWikiHtml(match[1]));
+ const listSource=htmlSection.replace(/<table\\b[\\s\\S]*?<\\/table>/gi," ");
+ const listLines=[...listSource.matchAll(/<(?:li|p)\\b[^>]*>([\\s\\S]*?)<\\/(?:li|p)>/gi)].map(match=>stripWikiHtml(match[1]));
  for(const line of listLines){
   if(!line)continue;
   const normalized=normalizeDropName(line);
@@ -140,7 +141,7 @@ async function fetchWikiPages(weapons){
  for(let i=0;i<batches.length;i+=3){
   await Promise.all(batches.slice(i,i+3).map(async batch=>{
    const query=batch.map(x=>encodeURIComponent(x)).join("%7C");
-   const url="https://wiki.warframe.com/api.php?action=query&format=json&prop=extracts%7Crevisions&explaintext=0&exsectionformat=wiki&rvprop=content&rvslots=main&titles="+query;
+   const url="https://wiki.warframe.com/api.php?action=query&format=json&redirects=1&prop=extracts%7Crevisions&explaintext=0&exsectionformat=wiki&rvprop=content&rvslots=main&titles="+query;
    const data=await fetchJson(url);
    for(const page of Object.values(data.query?.pages||{})){
     const revision=page.revisions?.[0],wikitext=revision?.slots?.main?.content??revision?.slots?.main?.["*"]??revision?.["*"]??"";
@@ -196,6 +197,8 @@ async function main(){
  const items=[];
  const allRaw=lists.flatMap(([category,raw])=>raw.filter(w=>isMasteryWeapon(w,category)).map(w=>({w,category})));
  const wikiDropLookup=await fetchWikiPages(allRaw.map(x=>x.w));
+ const missingAcquisitionPages=[...new Set(allRaw.filter(x=>!wikiDropLookup(x.w).sectionFound).map(x=>wikiTitle(x.w)))];
+ if(missingAcquisitionPages.length)throw new Error("Páginas sem seção Acquisition identificada ("+missingAcquisitionPages.length+"): "+missingAcquisitionPages.slice(0,30).join("; "));
 
  for(const [category,raw] of lists){
   if(!Array.isArray(raw))throw new Error("Dataset inválido para "+category);
@@ -212,7 +215,8 @@ async function main(){
     const meta=componentMap.get(c.uniqueName)||c,token=String(c.uniqueName||"").split("/").pop();
     const compact=normalizeDropName(w.name),suffix=token.toLowerCase().startsWith(compact)?token.slice(compact.length).replace(/([a-z])([A-Z])/g,"$1 $2").trim():"";
     const fallback=displayName(meta),name=suffix?w.name+" "+suffix:(normalizeDropName(fallback).startsWith(compact)?fallback:w.name+" "+fallback);
-    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:wikiAcquisition.parts.get(normalizeDropName(name.replace(w.name,"").trim()))||[]};
+    const rawPartKey=normalizeDropName(name.replace(w.name,"").trim()),partKey=({gunchassis:"chassis",weaponchassis:"chassis"})[rawPartKey]||rawPartKey;
+    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:wikiAcquisition.parts.get(partKey)||[]};
    });
    items.push({
     id:w.uniqueName,name:w.name,category,
@@ -232,6 +236,6 @@ async function main(){
  await fs.writeFile(output,"/* Gerado automaticamente pelo GitHub Actions. */\nwindow.WFC_WEAPONS_SNAPSHOT="+JSON.stringify(data)+";\n","utf8");
  const allParts=items.flatMap(w=>w.parts||[]);
  console.log("Armas de Maestria validadas:",counts,"Total:",items.length,"Peças:",allParts.length);
- console.log("Dados Wiki:",{paginasConsultadas:allRaw.length,paginasComSecaoAcquisition:allRaw.filter(w=>wikiDropLookup(w).sectionFound).length,paginasComDropDeProjeto:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length});
+ console.log("Auditoria Acquisition Wiki:",{paginasUnicas:[...new Set(allRaw.map(w=>wikiTitle(w)))].length,paginasComSecaoAcquisition:[...new Set(allRaw.filter(w=>wikiDropLookup(w).sectionFound).map(w=>wikiTitle(w)))].length,paginasComDropDeProjeto:items.filter(w=>w.drops.length).length,pecasComImagem:allParts.filter(p=>p.image).length,pecasComDrop:allParts.filter(p=>p.drops.length).length,armasSemDropDeProjeto:items.filter(w=>!w.drops.length).map(w=>w.name).slice(0,30),pecasSemDrop:allParts.filter(p=>!p.drops.length).length});
 }
 main().catch(e=>{console.error("Geração de armas cancelada:",e);process.exitCode=1;});
