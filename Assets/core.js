@@ -439,7 +439,7 @@ function renderLobby(host) {
       return `<a class="mod ${full ? "full" : "pending"}" href="#m=${encodeURIComponent(m.id)}" data-id="${esc(m.id)}">
         <div class="img"><img><span class="tag ${full ? "d" : "p"}">${esc(full ? "✓ " + t("badgeDone") : t("badgePend", { n: s.t - s.d }))}</span></div>
         <div class="info"><h3>${esc(modTitle(m))}</h3><div class="meta"><span>${esc(t("cDone", { d: s.d, t: s.t }))}</span><span>${mp}%</span></div>
-        <div class="bar sm"><i style="width:${mp}%"></i></div></div></a>`;
+        <div class="bar sm"><i style="width:${mp}%"></i></div></div><label class="mod-check"><input type="checkbox" data-mod-check="${esc(m.id)}"><span>${esc(t("markAllCb"))}</span></label></a>`;
     }).join("")}</div>
     <div class="foot">${esc(t("save"))}</div>`;
   host.querySelectorAll(".mod").forEach(a => {
