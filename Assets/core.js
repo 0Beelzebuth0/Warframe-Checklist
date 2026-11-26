@@ -187,7 +187,6 @@ function renderWarframesModule(host, id, focusKey) {
       if(openFrames.has(key))openFrames.delete(key);else openFrames.add(key);
       updateCard(f,card);
     };
-    card.querySelector('input[data-frame]').onchange=cb=>{};
     card.querySelector('input[data-frame]').onchange=e=>{
       const checked=e.currentTarget.checked;
       f.parts.forEach(part=>{const key=f.key+":"+part.id;if(checked)done[key]=true;else delete done[key];});
