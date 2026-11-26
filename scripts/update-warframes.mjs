@@ -183,13 +183,14 @@ async function wikiComponentThumbnails(frames) {
       const json = await response.json();
       for (const page of Object.values(json.query?.pages || {})) {
         if (!page.title || !Array.isArray(page.images)) continue;
+        if (i === 0 && page.title.toLowerCase() === "ash") console.log("Wiki page images sample:", page.title, page.images.length, page.images.slice(0, 20).map(image => image.title));
         const frame = batch.find(item => normalizeTitle(item.name) === normalizeTitle(page.title));
         if (!frame) continue;
         for (const [, label] of PARTS) {
-          const name = normalizeTitle(frame.name), part = normalizeTitle(label);
+          const name = normalizeTitle(frame.name).replace(/[^a-z0-9]/g, ""), part = normalizeTitle(label).replace(/[^a-z0-9]/g, "");
           const candidates = page.images.filter(image => {
-            const file = normalizeTitle(image.title);
-            return file.startsWith(name + " ") && file.includes(part);
+            const file = normalizeTitle(image.title).replace(/[^a-z0-9]/g, "");
+            return file.startsWith(name) && file.includes(part);
           }).sort((a, b) => {
             const aa = normalizeTitle(a.title), bb = normalizeTitle(b.title);
             const ap = aa.includes("blueprint") ? 0 : 1, bp = bb.includes("blueprint") ? 0 : 1;
