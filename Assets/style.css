@@ -326,3 +326,14 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .mod-check span{display:none}
 .mod-check input{width:16px;height:16px;margin:0;cursor:pointer}
 .mod .tag{right:42px}
+
+
+/* Weapons section: category navigation and weapon-type filter */
+.wep-category-tabs{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0 12px}
+.wep-category-tabs .btn{padding:9px 18px;font-weight:700}
+.wep-type-select{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 12px;min-width:170px;max-width:100%}
+.weapon-card .wf-expander{cursor:default}
+.weapon-card .wf-head{min-height:104px}
+.weapon-card .wf-title .bar{max-width:260px}
+.weapon-card .wf-count{overflow-wrap:anywhere}
+@media(max-width:760px){.wep-type-select{flex:1 1 100%;width:100%}.wep-category-tabs .btn{flex:1 1 auto}.weapon-card .wf-head{min-height:92px}}
