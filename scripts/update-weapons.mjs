@@ -96,6 +96,9 @@ async function fetchWikiPages(weapons){
   }));
  }
  console.log("Páginas Wiki renderizadas para tabelas de Relíquias:",templated.length);
+ const templateCounts={};for(const page of pages.values()){for(const m of acquisitionSection(page.wikitext).matchAll(/\\{\\{\\s*([^|}\\s]+)/g)){templateCounts[m[1]]=(templateCounts[m[1]]||0)+1;}}
+ const aeolak=pages.get(normalizeDropName("Aeolak"));console.log("WIKI ACQUISITION TEMPLATES",JSON.stringify(Object.entries(templateCounts).sort((a,b)=>b[1]-a[1]).slice(0,30)));console.log("AEOLAK WIKITEXT",acquisitionSection(aeolak?.wikitext).slice(0,2200));
+
  if(pages.size<Math.min(100,titles.length*0.5))throw new Error("A Wiki não retornou páginas suficientes para validar as aquisições ("+pages.size+"/"+titles.length+").");
  return weapon=>pages.get(normalizeDropName(wikiTitle(weapon)))||{html:"",wikitext:""};
 }
