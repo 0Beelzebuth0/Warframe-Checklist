@@ -394,7 +394,7 @@ function renderModule(host, id, focusKey) {
     host.querySelectorAll("input[data-ma]").forEach(cb => { const its = scopeItems(cb.dataset.ma), d = its.filter(i => done[i.key]).length; cb.checked = its.length > 0 && d === its.length; cb.indeterminate = d > 0 && d < its.length; });
   }
   host.querySelectorAll(".sec-filters").forEach(bar => { const gid = bar.dataset.sg; bar.querySelectorAll("[data-sf]").forEach(b => b.onclick = () => { groupFilters[gid] = b.dataset.sf; refresh(); }); });
-  host.querySelector(".search").oninput = e => { q = e.target.value; refresh(); };
+  host.querySelector(".search").oninput = e => { q = e.target.value; const nq = norm(q); if (nq) { const match = groups.find(g => m.items.some(it => it.g === g.id && norm(it.name).includes(nq))); if (match) { activeGroup = match.id; drawTabs(); } } refresh(); };
   host.querySelectorAll("input[data-ma]").forEach(cb => cb.onchange = () => {
     const its = scopeItems(cb.dataset.ma), any = its.some(i => done[i.key]);
     if (confirm(t(any ? "confUnmarkAll" : "confMarkAll"))) { its.forEach(i => { if (any) delete done[i.key]; else done[i.key] = true; }); save(); }
