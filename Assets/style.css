@@ -199,3 +199,8 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .wf-part{min-width:0}
 @media(max-width:760px){.wf-grid{grid-template-columns:1fr}.wf-parts{grid-template-columns:1fr}.wf-part{border-right:0;border-bottom:1px solid var(--line)}.wf-part:last-child{border-bottom:0}}
 @media(max-width:480px){.wf-expander{gap:10px;padding:10px}.wf-image{width:76px;height:76px}.wf-master-check{width:46px}}
+
+
+/* Keep the card header and its master checkbox aligned on narrow screens too. */
+.wf-head{flex-direction:row}
+.wf-expander{min-width:0}
