@@ -411,7 +411,7 @@ const ICO = {
   tiles: '<rect x="2" y="2" width="4" height="4"/><path d="M8 3h6M8 5h4"/><rect x="2" y="9" width="4" height="4"/><path d="M8 10h6M8 12h4"/>',
   cont: '<rect x="2" y="2" width="3" height="3"/><path d="M7 3.5h7"/><rect x="2" y="7" width="3" height="3"/><path d="M7 8.5h7M2 13h12"/>'
 };
-const VIEWS = [["m", "vM"], ["l", "vL"], ["det", "vDet"], ["tiles", "vTiles"]];
+const VIEWS = [["s", "vS"], ["m", "vM"], ["l", "vL"], ["det", "vDet"], ["tiles", "vTiles"]];
 const svg = k => `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">${ICO[k]}</svg>`;
 function renderLobby(host) {
   document.title = t("siteTitle");
