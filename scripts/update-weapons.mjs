@@ -17,6 +17,7 @@ function chanceNumber(v){if(v===null||v===undefined||v==="")return null;const n=
 function pageUrl(title){return wikiPage(title);}
 
 function buildDrops(itemName,data){
+ const targets=new Set([itemName,itemName+" Blueprint"]);
  const out=[],seen=new Set();
  const add=(source,chance,detail="")=>{
   const n=chanceNumber(chance),label=String(source||"Fonte não identificada");
@@ -25,7 +26,7 @@ function buildDrops(itemName,data){
  };
  const blueprints=data.blueprintLocations||[];
  for(const entry of blueprints){
-  if(entry?.itemName!==itemName)continue;
+  if(!targets.has(entry?.itemName))continue;
   for(const enemy of entry.enemies||[]){
    const table=chanceNumber(enemy.chance),roll=chanceNumber(enemy.enemyBlueprintDropChance);
    const actual=table!==null&&roll!==null?table*roll/100:table;
@@ -101,7 +102,7 @@ async function main(){
     return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:meta.wikiaUrl||wikiPage(name),drops:buildDrops(name,drops)};
    });
    items.push({
-    id:w.uniqueName,name:w.name,category,type:w.type||w.productCategory||"Outros",
+    id:w.uniqueName,name:w.name,category,
     variant:variantOf(w),isPrime:!!w.isPrime,
     image:w.wikiaThumbnail||(w.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(w.imageName):""),
     wikiUrl:w.wikiaUrl||wikiPage(w.name),description:w.description||"",
