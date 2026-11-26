@@ -553,7 +553,7 @@ WFC.boot = async function (opt) {
   } else {
     WFC.spa = true;
     const files = await discover();
-    await Promise.all(files.map(async f => { const id = f.replace(/\.html$/i, ""); if (WFC.mods[id]) return 0; if (id === "02WARFRAMES") await loadScript(`${WFC.root}Content/warframes-data.js`); return loadScript(`${WFC.root}Content/${id}.js`); }));
+    await Promise.all(files.map(async f => { const id = f.replace(/\.html$/i, ""); if (WFC.mods[id]) return 0; if (id === "02WARFRAMES") await loadScript(`${WFC.root}Content/warframes-data.js`); if (id === "03WEAPONS") await loadScript(`${WFC.root}Content/weapons-data.js`); return loadScript(`${WFC.root}Content/${id}.js`); }));
     const route = () => {
       const h = new URLSearchParams(location.hash.slice(1)), id = h.get("m");
       if (id && WFC.mods[id]) rerender = () => renderModule(host, id, null), renderModule(host, id, h.get("i"));
