@@ -37,8 +37,8 @@ function buildDrops(itemName,data){
  const scan=(node,pathParts=[])=>{
   if(Array.isArray(node)){for(let i=0;i<node.length;i++)scan(node[i],pathParts);return;}
   if(!node||typeof node!=="object")return;
-  if(node.itemName===itemName&&node.chance!==undefined){
-   const label=pathParts.filter(x=>typeof x==="string"&&!/^\d+$/.test(x)).slice(-4).join(" · ")||"Tabela de recompensas";
+  if(targets.has(node.itemName)&&node.chance!==undefined){
+   const label=pathParts.filter(x=>typeof x==="string"&&!/^\\d+$/.test(x)&&!["rewards","reward","blueprintLocations"].includes(x)).slice(1).join(" · ")||"Tabela de recompensas";
    add(label,node.chance,[node.rarity||"",node.tier||"",node.state||""].filter(Boolean).join(" · "));
   }
   for(const [key,value] of Object.entries(node)){
