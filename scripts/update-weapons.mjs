@@ -84,6 +84,7 @@ function parseWikiAcquisition(page,weapon){
   const n=Number(match[1]);
   return Number.isFinite(n)&&n>=0&&n<=100?n:null;
  };
+ const relicOdds={common:{intact:25.33,exceptional:23.33,flawless:20,radiant:16.67},uncommon:{intact:11,exceptional:13,flawless:17,radiant:20},rare:{intact:2,exceptional:4,flawless:6,radiant:10}};
  const relicPattern=/\b(Lith|Meso|Neo|Axi|Requiem|Omnia)\s+([A-Z]\d+|[IVX]+)\b(?:\s*\(([VB])\))?/gi;
  const tables=[...htmlSection.matchAll(/<table\b[\s\S]*?<\/table>/gi)];
  for(const tableMatch of tables){
