@@ -342,3 +342,12 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .weapon-card .wf-title .bar{max-width:260px}
 .weapon-card .wf-count{overflow-wrap:anywhere}
 @media(max-width:760px){.wep-type-select{flex:1 1 100%;width:100%}.wep-category-tabs .btn{flex:1 1 auto}.weapon-card .wf-head{min-height:92px}}
+
+/* Expandable weapon blueprint, component and drop-source details */
+.weapon-details-toggle{display:block;width:calc(100% - 24px);margin:0 12px 12px;text-align:left;color:var(--gold)}
+.weapon-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0;border-top:1px solid var(--line);background:#0e141d}
+.weapon-details[hidden]{display:none!important}
+.weapon-details .wf-part{border-right:1px solid var(--line);border-bottom:0;padding:14px;min-width:0}
+.weapon-details .wf-part-title{font-size:13px;min-height:32px;color:var(--gold)}
+.weapon-details .wf-drops{display:flex;flex-direction:column;gap:7px}
+@media(max-width:760px){.weapon-details{grid-template-columns:1fr}.weapon-details .wf-part{border-right:0;border-bottom:1px solid var(--line)}}
