@@ -31,7 +31,7 @@ function buildDropIndex(data){
  };
  for(const entry of data.blueprintLocations||[]){
   for(const enemy of entry.enemies||[]){
-   const table=chanceNumber(enemy.chance),roll=chanceNumber(enemy.enemyBlueprintDropChance);
+   const table=chanceNumber(enemy.chance),roll=chanceNumber(enemy.enemyBlueprintDropChance??enemy.enemyItemDropChance);
    const actual=table!==null&&roll!==null?table*roll/100:table;
    add(entry.itemName,enemy.enemyName||"Inimigo",actual,[enemy.rarity||"",table!==null?"Chance na tabela: "+table+"%":"",roll!==null?"Chance de blueprint: "+roll+"%":""].filter(Boolean).join(" · "));
   }
@@ -39,13 +39,15 @@ function buildDropIndex(data){
  const scan=(node,pathParts=[])=>{
   if(Array.isArray(node)){for(const value of node)scan(value,pathParts);return;}
   if(!node||typeof node!=="object")return;
+  const context=[node.bountyLevel,node.tier&&node.name?node.tier+" "+node.name:null,node.enemyName,node.objectiveName,node.gameMode].filter(Boolean);
+  const currentPath=[...pathParts,...context];
   if(node.itemName&&node.chance!==undefined){
-   const label=pathParts.filter(x=>typeof x==="string"&&!/^\d+$/.test(x)&&!["rewards","reward","blueprintLocations"].includes(x)).slice(1).join(" · ")||"Tabela de recompensas";
-   add(node.itemName,label,node.chance,[node.rarity||"",node.tier||"",node.state||""].filter(Boolean).join(" · "));
+   const label=currentPath.filter(x=>typeof x==="string"&&!/^\d+$/.test(x)&&!["rewards","reward","blueprintLocations"].includes(x)).slice(1).join(" · ")||"Tabela de recompensas";
+   add(node.itemName,label,node.chance,[node.rarity||"",node.stage||"",node.state||""].filter(Boolean).join(" · "));
   }
   for(const [key,value] of Object.entries(node)){
-   if(key==="_id"||key==="itemName"||key==="chance"||key==="rarity")continue;
-   scan(value,[...pathParts,key]);
+   if(key==="_id"||key==="itemName"||key==="chance"||key==="rarity"||context.includes(value))continue;
+   scan(value,[...currentPath,key]);
   }
  };
  for(const [key,value] of Object.entries(data))if(key!=="blueprintLocations")scan(value,[key]);
