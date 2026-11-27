@@ -612,3 +612,16 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 
 /* Hide the card thumbnail while weapon details are expanded; the Blueprint keeps its own image. */
 .weapon-card.expanded .wf-head .wf-image{display:none}
+
+
+/* Weapons: remove the redundant left-side header when expanded; details use full card width. */
+@media(min-width:761px){
+ .weapon-card.expanded{display:block;grid-template-columns:minmax(0,1fr)}
+ .weapon-card.expanded>.wf-head{display:none}
+ .weapon-card.expanded>.weapon-parts{width:100%;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));border-top:0}
+}
+.weapon-card.expanded>.weapon-parts{min-width:0}
+.wf-tools-row .wep-expand-all{white-space:nowrap;flex:none}
+@media(max-width:760px){
+ .wf-tools-row .wep-expand-all{margin-left:auto}
+}
