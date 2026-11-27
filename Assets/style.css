@@ -583,3 +583,29 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .weapon-card .wf-drop-source{width:100%;}
 .weapon-card .wf-drop-source>span{order:1;}
 .weapon-card .wf-drop-source-image{order:2;margin-left:auto;}
+
+/* Weapon Prime filter and expanded acquisition layout */
+.wep-category-tabs .wep-prime-filter{margin-left:14px;border-color:#a98745;color:#e6c477}
+.wep-category-tabs .wep-prime-filter.on{background:linear-gradient(135deg,#594522,#2c2417);border-color:#e6c477;box-shadow:0 0 0 1px #e6c47733}
+.weapon-card.is-prime{border-color:#a98745}
+.weapon-card.is-prime:hover,.weapon-card.is-prime.expanded{border-color:#e6c477;box-shadow:0 0 0 1px #e6c47735}
+.weapon-card .wf-count{display:none!important}
+.weapon-card .weapon-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:0}
+.weapon-card .weapon-details-bar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);background:#0e141d}
+.weapon-card .weapon-details-name{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap}
+.weapon-card .weapon-details-name strong{font-size:16px;color:var(--gold);overflow-wrap:anywhere}
+.weapon-card .weapon-details-name a{font-size:12px;text-decoration:none}
+.weapon-card .weapon-details-name a:hover{text-decoration:underline}
+.weapon-card .weapon-details-bar .wf-master-check{position:static;flex:none;width:34px;height:34px}
+.weapon-card .wf-blueprint{display:flex;flex-direction:row;align-items:flex-start;gap:14px;grid-column:1/-1;border-right:0;border-bottom:1px solid var(--line);padding:14px 16px}
+.weapon-card .wf-blueprint .wf-part-title{flex:0 0 170px;display:flex;align-items:center;gap:10px;min-height:52px}
+.weapon-card .wf-blueprint .wf-drops{flex:1;min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));align-items:start}
+.weapon-card .wf-blueprint .wf-part-image{width:52px;height:52px}
+.weapon-card .weapon-parts>.wf-part:not(.wf-blueprint){border-top:0}
+@media(max-width:600px){
+ .wep-category-tabs .wep-prime-filter{margin-left:8px}
+ .weapon-card .wf-blueprint{flex-direction:column;gap:10px}
+ .weapon-card .wf-blueprint .wf-part-title{flex:0 0 auto}
+ .weapon-card .wf-blueprint .wf-drops{width:100%;grid-template-columns:1fr}
+ .weapon-card .weapon-details-bar{padding:10px 12px}
+}
