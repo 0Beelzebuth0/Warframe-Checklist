@@ -97,10 +97,9 @@ function loadImg(img, name, files, page) {
 function buildTop() {
   const h = $("#topbar");
   h.className = "top";
-  h.innerHTML = `<nav class="nav"><a class="brand" href="${WFC.root}index.html" data-i18n="siteTitle"></a>
-    <button class="btn" id="bExp" data-i18n="exp"></button>
-    <button class="btn" id="bImp" data-i18n="imp"></button><input type="file" id="fImp" accept=".json,application/json" hidden>
-    <label class="lang-box"><span data-i18n="language"></span><select id="sLang"></select></label></nav>`;
+  const current = location.hash.includes("03WEAPONS") ? "weapons" : location.hash.includes("02WARFRAMES") ? "warframes" : location.hash.includes("01JOURNEYS") ? "journeys" : (document.body.dataset.root ? (location.pathname.includes("03WEAPONS") ? "weapons" : location.pathname.includes("02WARFRAMES") ? "warframes" : "journeys") : "home");
+  const links = [["home","⌂","Início",WFC.root+"index.html"],["weapons","▤","Armas",WFC.root+"Content/03WEAPONS.html"],["journeys","✣","Jornadas",WFC.root+"Content/01JOURNEYS.html"],["warframes","♙","Warframes",WFC.root+"Content/02WARFRAMES.html"]];
+  h.innerHTML = `<nav class="nav wf-nav"><a class="brand" href="${WFC.root}index.html"><span class="brand-mark">✥</span><span>WARFRAME<br><b>CHECKLIST</b></span></a><div class="nav-links">${links.map(([id,icon,label,url])=>'<a class="nav-link'+(current===id?' active':'')+'" href="'+url+'"><span class="nav-icon">'+icon+'</span><span>'+label+'</span></a>').join("")}</div><div class="nav-tools"><button class="btn icon-tool" id="bExp" title="${esc(t("exp"))}" aria-label="${esc(t("exp"))}">⇧</button><button class="btn icon-tool" id="bImp" title="${esc(t("imp"))}" aria-label="${esc(t("imp"))}">⇩</button><input type="file" id="fImp" accept=".json,application/json" hidden><label class="lang-box"><span data-i18n="language"></span><select id="sLang"></select></label></div></nav>`;
   const s = $("#sLang");
   LANGS.forEach(([c, n]) => s.add(new Option(n, c)));
   s.onchange = () => setLang(s.value);
@@ -368,10 +367,9 @@ function renderModule(host, id, focusKey) {
   const back = WFC.spa ? "#" : WFC.root + "index.html";
   host.innerHTML = `<div class="mhead"><a class="btn" href="${back}">${esc(t("lobby"))}</a><h1>${esc(modTitle(m))}</h1><div class="journey-category-tabs" id="journeyTabs"></div><span class="stat" id="mStat"></span></div>
     <div class="bar"><i id="mBar"></i></div><div class="banner hidden" id="mBan">${esc(t("modDone"))}</div>
-    <div class="tools-block"><div class="search-row wf-tools-row"><input class="search" type="search" placeholder="${esc(t("msearch"))}">
-    </div></div><div class="journey-groups" id="journeyGroups">${groups.map(g => `<section class="journey-group" data-g="${esc(g.id)}">
+    <div class="tools-block"><div class="search-row wf-tools-row journey-search-row"><input class="search" type="search" placeholder="${esc(t("msearch"))}"><div class="vrow module-view-row journey-view-row"></div></div></div><div class="journey-groups" id="journeyGroups">${groups.map(g => `<section class="journey-group" data-g="${esc(g.id)}">
       <div class="journey-group-head"><h2>${esc(g.title ? (g.title[lang] || g.title.en) : "")}</h2><span class="gs"></span></div>
-      <div class="sec-filters" data-sg="${esc(g.id)}">${g.id === "side" || g.id === "frames" ? '<div class="vrow module-view-row"></div>' : ""}<button class="btn on" data-sf="all">${esc(t("fAll"))}</button><button class="btn" data-sf="done">${esc(t("fDone"))}</button><button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
+      <div class="sec-filters" data-sg="${esc(g.id)}"><button class="btn on" data-sf="all">${esc(t("fAll"))}</button><button class="btn" data-sf="done">${esc(t("fDone"))}</button><button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
         <button type="button" class="btn journey-order-toggle" data-order-toggle title="Codex / Comunidade"></button><label class="mark-all-box" title="${esc(t("markAllCb"))}"><input type="checkbox" data-ma="${esc(g.id)}" aria-label="${esc(t("markAllCb"))}"></label></div><div class="grid module-grid v-${view}"></div>
     </section>`).join("")}</div>`;
   const tabs = host.querySelector("#journeyTabs"), moduleViewRows = host.querySelectorAll(".module-view-row");
@@ -416,11 +414,11 @@ function renderModule(host, id, focusKey) {
       const d = !!done[it.key], sf = groupFilters[it.g] || "all";
       c.classList.toggle("done", d); c.querySelector(".chk").setAttribute("aria-pressed", d); c.querySelector(".chk").title=t("check");
       const matchGroup = sf === "all" || (sf === "done" && d) || (sf === "pend" && !d), matchSearch = !nq || norm(it.name).includes(nq);
-      c.classList.toggle("hidden", !(it.g === activeGroup && matchGroup && matchSearch));
+      c.classList.toggle("hidden", !(matchGroup && matchSearch));
     });
     host.querySelectorAll(".journey-group").forEach(sec => {
       const gid = sec.dataset.g, its = m.items.filter(i => i.g === gid), d = its.filter(i => done[i.key]).length;
-      sec.querySelector(".gs").textContent = t("cDone", { d, t: its.length }); sec.hidden = gid !== activeGroup;
+      sec.querySelector(".gs").textContent = t("cDone", { d, t: its.length }); sec.hidden = false;
       sec.querySelectorAll("[data-sf]").forEach(b => b.classList.toggle("on", b.dataset.sf === (groupFilters[gid] || "all")));
     });
     host.querySelector("#mStat").textContent = t("cDone", { d: s.d, t: s.t }); host.querySelector("#mBar").style.width = pct(s.d, s.t) + "%";
@@ -449,7 +447,7 @@ const ICO = {
   tiles: '<rect x="2" y="2" width="4" height="4"/><path d="M8 3h6M8 5h4"/><rect x="2" y="9" width="4" height="4"/><path d="M8 10h6M8 12h4"/>',
   cont: '<rect x="2" y="2" width="3" height="3"/><path d="M7 3.5h7"/><rect x="2" y="7" width="3" height="3"/><path d="M7 8.5h7M2 13h12"/>'
 };
-const VIEWS = [["s", "vS"], ["m", "vM"], ["l", "vL"], ["det", "vDet"], ["tiles", "vTiles"]];
+const VIEWS = [["s", "vS"], ["m", "vM"], ["l", "vL"], ["det", "vDet"]];
 const svg = k => `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">${ICO[k]}</svg>`;
 function renderLobby(host) {
   document.title = t("siteTitle");

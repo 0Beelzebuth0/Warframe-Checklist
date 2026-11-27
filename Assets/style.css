@@ -660,3 +660,86 @@ h2.sec{font-size:24px;margin:36px 0 2px}
  .journey-group .sec-filters .mark-all-box{order:3}
  .quest-card .quest-check{top:8px;right:8px}
 }
+
+
+/* ---------- Warframe-inspired visual refresh ---------- */
+:root{--bg:#070d16;--panel:#111c2a;--panel2:#19283a;--line:#40536b;--text:#eef3fa;--muted:#a9b8ca;--gold:#d7ad50;--green:#68d5a1;--red:#ed7777}
+body{background:radial-gradient(ellipse at 78% 0%,#17304788 0,transparent 38%),linear-gradient(180deg,#07111d 0%,#0a111b 54%,#080d15 100%);background-attachment:fixed}
+.top{background:linear-gradient(90deg,#050b13f5,#0a1522f0 65%,#07101af5);border-bottom:1px solid #8e713b;box-shadow:0 8px 30px #0008}
+.nav.wf-nav{max-width:1500px;min-height:82px;padding:9px 26px;gap:24px;flex-wrap:nowrap}
+.wf-nav .brand{display:flex;align-items:center;gap:14px;margin:0;padding-right:28px;border-right:1px solid #9d895f;color:#f0f3f8;font-size:clamp(17px,2vw,27px);line-height:.96;letter-spacing:-.04em}
+.wf-nav .brand b{color:#d8bd83;font-weight:750}
+.brand-mark{font-size:42px;color:#e2e8f0;text-shadow:0 0 18px #8eb5d866}
+.nav-links{display:flex;align-items:stretch;justify-content:center;gap:clamp(8px,2.4vw,38px);flex:1;height:62px}
+.nav-link{display:flex;min-width:64px;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 8px;color:#c4cfdd;text-decoration:none;font-size:13px;font-weight:600;border-bottom:3px solid transparent;transition:.18s}
+.nav-link:hover,.nav-link.active{color:var(--gold);border-color:var(--gold);background:linear-gradient(0deg,#d7ad5018,transparent)}
+.nav-icon{font-size:25px;line-height:1.15;color:#aab9cc}
+.nav-link.active .nav-icon{color:var(--gold)}
+.nav-tools{display:flex;align-items:center;gap:7px}
+.icon-tool{width:38px;height:38px;padding:0;font-size:17px}
+.lang-box{background:#101b29;border:1px solid #394b60;border-radius:8px}
+main{max-width:1500px;padding:30px 26px 90px}
+.mhead{position:relative;display:flex;align-items:center;gap:18px;min-height:112px;padding:18px 22px;margin:0 0 16px;border-bottom:1px solid #7f673c;background:linear-gradient(90deg,#08121eeF 0%,#0b1724e8 60%,#0a1422a8 100%),url("https://www-static.warframe.com/uploads/0c1fb4674583e7e29bf36784b28f3476.png") right 35%/auto 230% no-repeat;border-radius:14px 14px 0 0;overflow:hidden}
+.mhead:after{content:"";position:absolute;inset:auto 0 0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.8}
+.mhead h1{font-size:clamp(25px,3vw,40px);letter-spacing:.02em;text-transform:uppercase;text-shadow:0 3px 14px #000}
+.mhead>.btn{background:#121f2d;border-color:#53677e}
+.mhead .stat{margin-left:auto;color:#d8c18c;font-weight:700}
+.bar{height:7px;background:#1a2939;border:1px solid #34485f;border-radius:20px;overflow:hidden}
+.bar i{background:linear-gradient(90deg,#b88932,#f0d17c);box-shadow:0 0 12px #d8ad5066}
+.tools-block{margin:18px 0 24px}
+.search-row{gap:14px}
+.search{background:#111d2b;border:1px solid #53677e;border-radius:12px;padding:13px 17px;min-height:50px;color:var(--text);box-shadow:inset 0 2px 8px #0004}
+.search:focus{border-color:var(--gold);outline:2px solid #d7ad5030}
+.btn{background:#111d2b;border:1px solid #43576f;border-radius:10px;color:#e8edf4}
+.btn:hover,.btn.on{border-color:var(--gold);background:#2b261b;color:#f1d18a}
+.journey-group{border:1px solid #8b754c;border-radius:18px;padding:10px 13px 14px;margin:22px 0;background:linear-gradient(115deg,#111e2ceF,#0b1420eF);box-shadow:0 12px 32px #0005;overflow:hidden}
+.journey-group-head{display:flex;align-items:center;gap:12px;padding:3px 8px 11px;border-bottom:1px solid #34475c}
+.journey-group-head h2{font-size:clamp(17px,2vw,23px);text-transform:uppercase;letter-spacing:.01em}
+.journey-group-head h2:before{content:"✥";color:var(--gold);font-size:25px;margin-right:13px}
+.sec-filters{display:flex;align-items:center;gap:8px;padding:10px 3px;flex-wrap:wrap}
+.sec-filters [data-sf]{border-radius:18px;padding:6px 15px}
+.sec-filters [data-sf="all"].on{background:linear-gradient(120deg,#b98d3e,#e2bd68);color:#111a25;border-color:#e4c477}
+.mark-all-box{margin-left:auto!important;background:transparent!important;border:0!important;padding:5px!important;box-shadow:none!important}
+.mark-all-box input{appearance:none;width:24px;height:24px;border:2px solid #b9c8d8;border-radius:5px;background:transparent;cursor:pointer}
+.mark-all-box input:checked{background:var(--gold);border-color:var(--gold)}
+.mark-all-box input:checked:after{content:"✓";display:block;color:#111;font-weight:900;text-align:center;line-height:20px}
+.mark-all-box span{display:none}
+.grid{gap:12px}
+.card.quest-card{display:grid;grid-template-columns:120px minmax(0,1fr);position:relative;min-height:148px;padding:10px;border:1px solid #3c5067;border-radius:12px;background:linear-gradient(135deg,#1a2a3c,#111b29);box-shadow:0 5px 16px #0004;transition:border-color .18s,transform .18s}
+.card.quest-card:hover{border-color:#c4a35d;transform:translateY(-2px)}
+.quest-card .art{grid-column:1;grid-row:1;display:block;width:120px;height:124px;border-radius:9px;overflow:hidden}
+.quest-card .art img{width:100%;height:100%;object-fit:cover}
+.quest-card .quest-info{grid-column:2;grid-row:1;align-self:center;padding:4px 24px 4px 5px;min-width:0}
+.quest-card h3{font-size:17px;margin:0 0 3px}
+.quest-card .wiki{display:inline-block;color:#39a8ff;font-weight:600;margin-bottom:3px}
+.quest-card .desc{color:#b8c7d9;line-height:1.35}
+.quest-card .quest-check{position:absolute;top:10px;right:10px;width:21px;height:21px;border:1.5px solid #c4d0de;border-radius:5px;background:transparent}
+.quest-card .quest-check[aria-pressed="true"]{background:var(--gold);border-color:var(--gold)}
+.quest-card .quest-check[aria-pressed="true"]:after{content:"✓";color:#111;font-weight:900}
+.quest-card.done{border-color:#a98b4c;background:linear-gradient(135deg,#25291f,#111b29)}
+/* Grid density follows the selected card view while keeping artwork legible. */
+.module-grid.v-s,.module-grid.v-m,.module-grid.v-l,.module-grid.v-xl{grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))}
+.module-grid.v-list{grid-template-columns:1fr}
+.module-grid.v-list .quest-card{min-height:86px;grid-template-columns:68px minmax(0,1fr)}
+.module-grid.v-list .art{width:68px;height:68px}
+.module-grid.v-list .quest-info{padding-left:8px}
+.module-grid.v-det{grid-template-columns:1fr}
+.module-grid.v-det .quest-card{min-height:90px;grid-template-columns:80px minmax(0,1fr)}
+.module-grid.v-det .art{width:80px;height:80px}
+.vrow{display:flex;gap:0;flex-wrap:wrap}
+.vrow .btn{min-width:52px;min-height:42px}
+.mod{border:1px solid #40536b;border-radius:15px;background:linear-gradient(135deg,#19293b,#0f1926);overflow:hidden;box-shadow:0 10px 26px #0005}
+.mod .img{height:180px;background:#101a27}
+.mod .img img{width:100%;height:100%;object-fit:cover}
+.mod .info{padding:14px 16px}
+.box,.notice{border-color:#455970;background:linear-gradient(120deg,#172638ed,#0e1825ed);border-radius:16px}
+.box h1,.sec{color:#e6c477}
+.foot{color:#93a5ba;border-top:1px solid #283b50;margin-top:30px;padding-top:15px}
+@media(max-width:900px){.nav.wf-nav{flex-wrap:wrap;gap:10px;padding:8px 14px}.wf-nav .brand{border:0;padding-right:8px}.nav-links{order:3;flex-basis:100%;height:52px;justify-content:space-around}.nav-tools{margin-left:auto}.mhead{background-size:auto 150%;}.card.quest-card{grid-template-columns:92px minmax(0,1fr)}.quest-card .art{width:92px;height:105px}}
+@media(max-width:560px){main{padding:18px 12px 60px}.nav.wf-nav{padding:7px 10px}.wf-nav .brand{font-size:16px}.brand-mark{font-size:30px}.nav-link{font-size:11px;min-width:0;padding:4px}.nav-icon{font-size:20px}.nav-tools .icon-tool{display:none}.lang-box{padding:4px 6px}.mhead{min-height:88px;padding:13px 10px;gap:9px;background-size:auto 120%}.mhead h1{font-size:23px}.journey-group{padding:8px;margin:14px 0}.sec-filters{gap:5px}.sec-filters [data-sf]{padding:5px 9px;font-size:12px}.card.quest-card{grid-template-columns:76px minmax(0,1fr);min-height:96px;padding:7px}.quest-card .art{width:76px;height:84px}.quest-card h3{font-size:14px}.quest-card .desc{font-size:12px}.quest-card .quest-info{padding-right:19px}.search-row{flex-wrap:wrap}.search-row .search{flex:1 1 100%}}
+
+.journey-search-row{display:grid;grid-template-columns:minmax(0,1fr) 202px;align-items:stretch;gap:16px}.journey-view-row{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;border:1px solid #52677f;border-radius:12px;overflow:hidden;gap:0}.journey-view-row .btn{border:0;border-radius:0;min-height:38px;background:#111d2b}.journey-view-row .btn:nth-child(odd){border-right:1px solid #52677f}.journey-view-row .btn:nth-child(-n+2){border-bottom:1px solid #52677f}.journey-category-tabs{display:none!important}.journey-group[hidden]{display:block!important}@media(max-width:600px){.journey-search-row{grid-template-columns:minmax(0,1fr) 132px;gap:8px}.journey-view-row .btn{min-height:32px}}
+
+/* Warframe and weapon modules share the refreshed card language. */
+.wf-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px}.wf-card{background:linear-gradient(135deg,#1a293a,#101a27);border-color:#40536b;box-shadow:0 8px 22px #0004}.wf-head{position:relative;gap:14px;padding:13px}.wf-image{width:116px;height:116px;border:1px solid #40536b;background:#0b1420;border-radius:10px}.wf-title strong,.wf-name-line strong{color:#edf2fa}.wf-parts{background:#0d1723;border-top-color:#40536b}.wf-part{border-right-color:#34485e}.wf-drop{background:#111e2c;border-color:#354a62}.wf-mark-all,.mod-check{background:transparent;border:0}.mod-check{justify-content:flex-end;padding:8px 13px;color:#a9b8ca}.mod-check input{accent-color:var(--gold)}.weapon-card{border-color:#40536b;background:linear-gradient(135deg,#1a293a,#101a27)}.weapon-card .wf-head{background:transparent}.weapon-details-toggle{background:#101c2a;border-color:#40536b}.wep-category-tabs .btn.on{background:linear-gradient(120deg,#b98d3e,#e2bd68);color:#111a25;border-color:#e4c477}.mods{grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr))}.mod-check input{width:21px;height:21px;appearance:none;border:1.5px solid #b9c8d8;border-radius:5px;background:transparent}.mod-check input:checked{background:var(--gold);border-color:var(--gold)}.mod-check input:checked:after{content:"✓";display:block;color:#111;font-weight:900;text-align:center;line-height:19px}
+@media(max-width:760px){.wf-parts{grid-template-columns:1fr}.wf-part{border-right:0;border-bottom:1px solid #34485e}.wf-head{gap:10px;padding:10px}.wf-image{width:82px;height:82px}.wf-title .bar{max-width:100%}}
