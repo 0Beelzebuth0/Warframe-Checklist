@@ -1,4 +1,4 @@
-/* Warframe Checklist — shared core. Used by index.html (Lobby) and by every Content/*.html module page. */
+/* Warframe Checklist — shared core. Used by index.html (Orbital) and by every Content/*.html module page. */
 (function () {
 "use strict";
 const W = window, I = W.WFC_I18N, LANGS = W.WFC_LANGS;
@@ -436,7 +436,7 @@ function renderModule(host, id, focusKey) {
   if (focusKey) { const hit = cards.find(([it]) => it.key === focusKey); if (hit) setTimeout(() => { hit[1].scrollIntoView({ block: "center" }); hit[1].classList.add("flash"); }, 150); }
   else scrollTo(0, 0);
 }
-/* ---------- Lobby view ---------- */
+/* ---------- Orbital view ---------- */
 const ICO = {
   xl: '<rect x="2" y="2" width="12" height="9" rx="1"/><path d="M6 14h4"/>',
   l: '<rect x="3" y="3" width="10" height="7" rx="1"/><path d="M6 13h4M8 10v3"/>',
@@ -449,7 +449,7 @@ const ICO = {
 };
 const VIEWS = [["s", "vS"], ["m", "vM"], ["l", "vL"], ["det", "vDet"]];
 const svg = k => `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">${ICO[k]}</svg>`;
-function renderLobby(host) {
+function renderOrbital(host) {
   document.title = t("siteTitle");
   const T = totals(), p = pct(T.d, T.t), view = VIEWS.some(v => v[0] === lsGet(K.view)) ? lsGet(K.view) : "m";
   const mods = Object.values(WFC.mods).sort((a, b) => a.id.localeCompare(b.id));
@@ -528,7 +528,7 @@ WFC.boot = async function (opt) {
     const route = () => {
       const h = new URLSearchParams(location.hash.slice(1)), id = h.get("m");
       if (id && WFC.mods[id]) rerender = () => renderModule(host, id, null), renderModule(host, id, h.get("i"));
-      else { rerender = () => renderLobby(host); renderLobby(host); scrollTo(0, 0); }
+      else { rerender = () => renderOrbital(host); renderOrbital(host); scrollTo(0, 0); }
     };
     addEventListener("hashchange", route);
     addEventListener("storage", e => { if (e.key === K.done) { load(); rerender(); } });
