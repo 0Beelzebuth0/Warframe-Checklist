@@ -502,3 +502,39 @@ h2.sec{font-size:24px;margin:36px 0 2px}
  .module-grid.v-det .card .art{width:64px;height:64px}
  .module-grid.v-det .card .body{padding:8px 10px}
 }
+
+
+/* Header navigation: category buttons sit beside each module title. */
+.mhead{min-width:0}
+.mhead h1{margin:0;flex:0 0 auto}
+.mhead .stat{margin-left:auto}
+.mhead .wep-category-tabs,.mhead .journey-category-tabs{
+  display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap;
+  width:auto;max-width:100%;margin:0;min-width:0
+}
+.mhead .wep-category-tabs .btn,.mhead .journey-category-tabs .btn{white-space:nowrap}
+.mhead .journey-category-tabs small{font-size:10px;opacity:.8}
+@media(max-width:760px){
+  .mhead{align-items:center}
+  .mhead h1{flex:1 1 auto}
+  .mhead .stat{margin-left:0}
+  .mhead .wep-category-tabs,.mhead .journey-category-tabs{flex:1 1 100%;order:4}
+}
+@media(max-width:420px){
+  .mhead .wep-category-tabs .btn,.mhead .journey-category-tabs .btn{flex:1 1 auto;padding:8px 10px}
+}
+
+/* Journeys: three quest-type topics are direct lists, not expandable outer panels. */
+.journey-groups{margin-top:14px}
+.journey-group{min-width:0;padding:16px;background:linear-gradient(155deg,#182130,#111722);border:1px solid var(--line);border-radius:14px}
+.journey-group[hidden]{display:none!important}
+.journey-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.journey-group-head h2{margin:0;color:var(--gold);font-size:19px}
+.journey-group-head .gs{color:var(--muted);font-size:12px;font-weight:700}
+.journey-group .sec-filters{margin:0 0 12px}
+.journey-group .module-grid{min-width:0}
+.journey-category-tabs .btn{font-size:13px}
+@media(max-width:620px){
+  .journey-group{padding:12px}
+  .journey-group-head h2{font-size:17px}
+}
