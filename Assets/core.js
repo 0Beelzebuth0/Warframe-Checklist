@@ -97,10 +97,9 @@ function loadImg(img, name, files, page) {
 function buildTop() {
   const h = $("#topbar");
   h.className = "top";
-  h.innerHTML = `<nav class="nav"><a class="brand" href="${WFC.root}index.html" data-i18n="siteTitle"></a>
-    <button class="btn" id="bExp" data-i18n="exp"></button>
-    <button class="btn" id="bImp" data-i18n="imp"></button><input type="file" id="fImp" accept=".json,application/json" hidden>
-    <label class="lang-box"><span data-i18n="language"></span><select id="sLang"></select></label></nav>`;
+  const current = location.hash.includes("03WEAPONS") ? "weapons" : location.hash.includes("02WARFRAMES") ? "warframes" : location.hash.includes("01JOURNEYS") ? "journeys" : (document.body.dataset.root ? (location.pathname.includes("03WEAPONS") ? "weapons" : location.pathname.includes("02WARFRAMES") ? "warframes" : "journeys") : "home");
+  const links = [["home","⌂","Início",WFC.root+"index.html"],["weapons","▤","Armas",WFC.root+"Content/03WEAPONS.html"],["journeys","✣","Jornadas",WFC.root+"Content/01JOURNEYS.html"],["warframes","♙","Warframes",WFC.root+"Content/02WARFRAMES.html"]];
+  h.innerHTML = `<nav class="nav wf-nav"><a class="brand" href="${WFC.root}index.html"><span class="brand-mark">✥</span><span>WARFRAME<br><b>CHECKLIST</b></span></a><div class="nav-links">${links.map(([id,icon,label,url])=>'<a class="nav-link'+(current===id?' active':'')+'" href="'+url+'"><span class="nav-icon">'+icon+'</span><span>'+label+'</span></a>').join("")}</div><div class="nav-tools"><button class="btn icon-tool" id="bExp" title="${esc(t("exp"))}" aria-label="${esc(t("exp"))}">⇧</button><button class="btn icon-tool" id="bImp" title="${esc(t("imp"))}" aria-label="${esc(t("imp"))}">⇩</button><input type="file" id="fImp" accept=".json,application/json" hidden><label class="lang-box"><span data-i18n="language"></span><select id="sLang"></select></label></div></nav>`;
   const s = $("#sLang");
   LANGS.forEach(([c, n]) => s.add(new Option(n, c)));
   s.onchange = () => setLang(s.value);
