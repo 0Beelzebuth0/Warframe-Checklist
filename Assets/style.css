@@ -577,3 +577,9 @@ h2.sec{font-size:24px;margin:36px 0 2px}
  .weapon-card.expanded{display:block}
  .weapon-card.expanded>.wf-parts{grid-template-columns:1fr}
 }
+
+
+/* Weapon acquisition: keep location/enemy artwork aligned on the right of its description. */
+.weapon-card .wf-drop-source{width:100%;}
+.weapon-card .wf-drop-source>span{order:1;}
+.weapon-card .wf-drop-source-image{order:2;margin-left:auto;}
