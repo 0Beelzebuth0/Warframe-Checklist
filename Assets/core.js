@@ -98,8 +98,8 @@ function buildTop() {
   const h = $("#topbar");
   h.className = "top";
   const current = location.hash.includes("03WEAPONS") ? "weapons" : location.hash.includes("02WARFRAMES") ? "warframes" : location.hash.includes("01JOURNEYS") ? "journeys" : (document.body.dataset.root ? (location.pathname.includes("03WEAPONS") ? "weapons" : location.pathname.includes("02WARFRAMES") ? "warframes" : "journeys") : "home");
-  const links = [["home","⌂","Início",WFC.root+"index.html"],["weapons","▤","Armas",WFC.root+"Content/03WEAPONS.html"],["journeys","✣","Jornadas",WFC.root+"Content/01JOURNEYS.html"],["warframes","♙","Warframes",WFC.root+"Content/02WARFRAMES.html"]];
-  h.innerHTML = `<nav class="nav wf-nav"><a class="brand" href="${WFC.root}index.html"><span class="brand-mark">✥</span><span>WARFRAME<br><b>CHECKLIST</b></span></a><div class="nav-links">${links.map(([id,icon,label,url])=>'<a class="nav-link'+(current===id?' active':'')+'" href="'+url+'"><span class="nav-icon">'+icon+'</span><span>'+label+'</span></a>').join("")}</div><div class="nav-tools"><button class="btn icon-tool" id="bExp" title="${esc(t("exp"))}" aria-label="${esc(t("exp"))}">⇧</button><button class="btn icon-tool" id="bImp" title="${esc(t("imp"))}" aria-label="${esc(t("imp"))}">⇩</button><input type="file" id="fImp" accept=".json,application/json" hidden><label class="lang-box"><span data-i18n="language"></span><select id="sLang"></select></label></div></nav>`;
+  const links = [["home","⌂","navHome",WFC.root+"index.html"],["weapons","▤","navWeapons",WFC.root+"Content/03WEAPONS.html"],["journeys","✣","navJourneys",WFC.root+"Content/01JOURNEYS.html"],["warframes","♙","navWarframes",WFC.root+"Content/02WARFRAMES.html"]];
+  h.innerHTML = `<nav class="nav wf-nav"><a class="brand" href="${WFC.root}index.html"><span class="brand-mark">✥</span><span>WARFRAME<br><b>CHECKLIST</b></span></a><div class="nav-links">${links.map(([id,icon,key,url])=>'<a class="nav-link'+(current===id?' active':'')+'" href="'+url+'"><span class="nav-icon">'+icon+'</span><span data-i18n="'+key+'"></span></a>').join("")}</div><div class="nav-tools"><button class="btn icon-tool" id="bExp" title="${esc(t("exp"))}" aria-label="${esc(t("exp"))}">⇧</button><button class="btn icon-tool" id="bImp" title="${esc(t("imp"))}" aria-label="${esc(t("imp"))}">⇩</button><input type="file" id="fImp" accept=".json,application/json" hidden><label class="lang-box"><span data-i18n="language"></span><select id="sLang"></select></label></div></nav>`;
   const s = $("#sLang");
   LANGS.forEach(([c, n]) => s.add(new Option(n, c)));
   s.onchange = () => setLang(s.value);
@@ -418,7 +418,7 @@ function renderModule(host, id, focusKey) {
     });
     host.querySelectorAll(".journey-group").forEach(sec => {
       const gid = sec.dataset.g, its = m.items.filter(i => i.g === gid), d = its.filter(i => done[i.key]).length;
-      sec.querySelector(".gs").textContent = t("cDone", { d, t: its.length }); sec.hidden = false;
+      sec.querySelector(".gs").textContent = t("cDone", { d, t: its.length }); sec.hidden = gid !== activeGroup;
       sec.querySelectorAll("[data-sf]").forEach(b => b.classList.toggle("on", b.dataset.sf === (groupFilters[gid] || "all")));
     });
     host.querySelector("#mStat").textContent = t("cDone", { d: s.d, t: s.t }); host.querySelector("#mBar").style.width = pct(s.d, s.t) + "%";
