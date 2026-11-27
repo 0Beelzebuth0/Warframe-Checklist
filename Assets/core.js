@@ -371,23 +371,23 @@ function renderModule(host, id, focusKey) {
     <div class="tools-block"><div class="search-row wf-tools-row"><input class="search" type="search" placeholder="${esc(t("msearch"))}">
     </div></div><div class="journey-groups" id="journeyGroups">${groups.map(g => `<section class="journey-group" data-g="${esc(g.id)}">
       <div class="journey-group-head"><h2>${esc(g.title ? (g.title[lang] || g.title.en) : "")}</h2><span class="gs"></span></div>
-      <div class="sec-filters" data-sg="${esc(g.id)}">${g.id === "main" ? '<div class="vrow module-view-row" id="moduleViewRow"></div>' : ""}<button class="btn on" data-sf="all">${esc(t("fAll"))}</button><button class="btn" data-sf="done">${esc(t("fDone"))}</button><button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
-        <label class="mark-all-box" title="${esc(t("markAllCb"))}"><input type="checkbox" data-ma="${esc(g.id)}" aria-label="${esc(t("markAllCb"))}"></label></div><div class="grid module-grid v-${view}"></div>
+      <div class="sec-filters" data-sg="${esc(g.id)}">${g.id === "side" || g.id === "frames" ? '<div class="vrow module-view-row"></div>' : ""}<button class="btn on" data-sf="all">${esc(t("fAll"))}</button><button class="btn" data-sf="done">${esc(t("fDone"))}</button><button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
+        <button type="button" class="btn journey-order-toggle" data-order-toggle title="Codex / Comunidade"></button><label class="mark-all-box" title="${esc(t("markAllCb"))}"><input type="checkbox" data-ma="${esc(g.id)}" aria-label="${esc(t("markAllCb"))}"></label></div><div class="grid module-grid v-${view}"></div>
     </section>`).join("")}</div>`;
-  const tabs = host.querySelector("#journeyTabs"), moduleViewRow = host.querySelector("#moduleViewRow");
+  const tabs = host.querySelector("#journeyTabs"), moduleViewRows = host.querySelectorAll(".module-view-row");
   const drawTabs = () => { tabs.innerHTML = groups.map(g => {
     const title = g.title ? (g.title[lang] || g.title.en) : g.id, count = m.items.filter(i => i.g === g.id).length;
     return '<button class="btn'+(g.id===activeGroup?' on':'')+'" data-group="'+esc(g.id)+'">'+esc(title)+' <small>('+count+')</small></button>';
   }).join(""); };
-  const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k); b.title=t(l); b.setAttribute("aria-label",t(l)); moduleViewRow.appendChild(b); }); };
+  const drawModuleViews = () => { moduleViewRows.forEach(moduleViewRow => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k); b.title=t(l); b.setAttribute("aria-label",t(l)); moduleViewRow.appendChild(b); }); }); };
   tabs.onclick = e => { const b=e.target.closest("[data-group]"); if(!b)return; activeGroup=b.dataset.group; lsSet("wfc.journey.category",activeGroup); drawTabs(); refresh(); };
-  moduleViewRow.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); };
+  moduleViewRows.forEach(row => row.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); });
   drawTabs(); drawModuleViews();
   if (id === "01JOURNEYS") {
-    const toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "btn journey-order-toggle";
-    const drawToggle = () => { toggle.textContent = journeyOrder === "community" ? "⇅ Comunidade" : "⇅ Codex"; toggle.setAttribute("aria-pressed", String(journeyOrder === "community")); };
-    drawToggle(); host.querySelector(".search-row").appendChild(toggle);
-    toggle.onclick = () => { journeyOrder = journeyOrder === "codex" ? "community" : "codex"; lsSet("wfc.journey.order", journeyOrder); rerender(); };
+    const toggles = host.querySelectorAll("[data-order-toggle]");
+    const drawToggle = () => toggles.forEach(toggle => { toggle.textContent = journeyOrder === "community" ? "⇅ Comunidade" : "⇅ Codex"; toggle.setAttribute("aria-pressed", String(journeyOrder === "community")); });
+    drawToggle();
+    toggles.forEach(toggle => toggle.onclick = () => { journeyOrder = journeyOrder === "codex" ? "community" : "codex"; lsSet("wfc.journey.order", journeyOrder); rerender(); });
   }
   const cards = [], displayItems = id === "01JOURNEYS" && journeyOrder === "community" ? [...m.items].sort((a,b) => {
     const ai=communityQuestOrder.indexOf(a.name), bi=communityQuestOrder.indexOf(b.name);
@@ -414,8 +414,7 @@ function renderModule(host, id, focusKey) {
     const s = stats(m), nq = norm(q);
     cards.forEach(([it, c]) => {
       const d = !!done[it.key], sf = groupFilters[it.g] || "all";
-      const prereqs=questPrerequisites[it.name]||[], locked=prereqs.some(name=>{const item=m.items.find(x=>x.name===name);return item&&!done[item.key];});
-      c.classList.toggle("quest-locked",locked); c.classList.toggle("done", d); c.querySelector(".chk").setAttribute("aria-pressed", d); c.querySelector(".chk").title=locked?t("questLocked"):t("check");
+      c.classList.toggle("done", d); c.querySelector(".chk").setAttribute("aria-pressed", d); c.querySelector(".chk").title=t("check");
       const matchGroup = sf === "all" || (sf === "done" && d) || (sf === "pend" && !d), matchSearch = !nq || norm(it.name).includes(nq);
       c.classList.toggle("hidden", !(it.g === activeGroup && matchGroup && matchSearch));
     });
