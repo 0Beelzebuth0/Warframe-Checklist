@@ -743,3 +743,62 @@ main{max-width:1500px;padding:30px 26px 90px}
 /* Warframe and weapon modules share the refreshed card language. */
 .wf-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px}.wf-card{background:linear-gradient(135deg,#1a293a,#101a27);border-color:#40536b;box-shadow:0 8px 22px #0004}.wf-head{position:relative;gap:14px;padding:13px}.wf-image{width:116px;height:116px;border:1px solid #40536b;background:#0b1420;border-radius:10px}.wf-title strong,.wf-name-line strong{color:#edf2fa}.wf-parts{background:#0d1723;border-top-color:#40536b}.wf-part{border-right-color:#34485e}.wf-drop{background:#111e2c;border-color:#354a62}.wf-mark-all,.mod-check{background:transparent;border:0}.mod-check{justify-content:flex-end;padding:8px 13px;color:#a9b8ca}.mod-check input{accent-color:var(--gold)}.weapon-card{border-color:#40536b;background:linear-gradient(135deg,#1a293a,#101a27)}.weapon-card .wf-head{background:transparent}.weapon-details-toggle{background:#101c2a;border-color:#40536b}.wep-category-tabs .btn.on{background:linear-gradient(120deg,#b98d3e,#e2bd68);color:#111a25;border-color:#e4c477}.mods{grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr))}.mod-check input{width:21px;height:21px;appearance:none;border:1.5px solid #b9c8d8;border-radius:5px;background:transparent}.mod-check input:checked{background:var(--gold);border-color:var(--gold)}.mod-check input:checked:after{content:"✓";display:block;color:#111;font-weight:900;text-align:center;line-height:19px}
 @media(max-width:760px){.wf-parts{grid-template-columns:1fr}.wf-part{border-right:0;border-bottom:1px solid #34485e}.wf-head{gap:10px;padding:10px}.wf-image{width:82px;height:82px}.wf-title .bar{max-width:100%}}
+
+/* Final responsive layout and text-flow corrections */
+.mhead{min-width:0;gap:12px}
+.mhead h1{min-width:0;overflow-wrap:anywhere}
+.mhead .journey-category-tabs{display:flex!important;flex:0 1 auto;min-width:0;max-width:100%;align-items:center;gap:7px;flex-wrap:wrap}
+.mhead .journey-category-tabs .btn{white-space:normal;max-width:100%;line-height:1.25;text-align:center}
+.journey-group,.journey-group-head,.sec-filters,.module-grid,.module-grid .card,.quest-card .body,.quest-card .quest-info{min-width:0}
+.journey-group-head h2{min-width:0;overflow-wrap:anywhere}
+.journey-group .sec-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.journey-group .sec-filters .mark-all-box{margin-left:auto!important;flex:0 0 auto}
+.module-grid{align-items:stretch;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:12px}
+.module-grid .quest-card{height:100%;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.module-grid .quest-card .art{width:100%;height:auto;aspect-ratio:16/9;flex:none}
+.module-grid .quest-card .art img{width:100%;height:100%;object-fit:cover}
+.module-grid .quest-card .body{width:100%;padding:12px 44px 12px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.module-grid .quest-card h3,.module-grid .quest-card .desc,.module-grid .quest-card .quest-wiki{max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+.module-grid .quest-card .quest-wiki{line-height:1.35}
+.module-grid.v-s{grid-template-columns:repeat(auto-fill,minmax(min(100%,145px),1fr));gap:9px}
+.module-grid.v-s .quest-card .art{aspect-ratio:1/1}
+.module-grid.v-s .quest-card .body{padding:8px 30px 9px 8px;gap:4px}
+.module-grid.v-s .quest-card h3{font-size:13px;text-align:left}
+.module-grid.v-m{grid-template-columns:repeat(auto-fill,minmax(min(100%,255px),1fr))}
+.module-grid.v-l{grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr))}
+.module-grid.v-l .quest-card .art{aspect-ratio:16/8}
+.module-grid.v-det{grid-template-columns:1fr;gap:8px}
+.module-grid.v-det .quest-card{display:grid;grid-template-columns:minmax(64px,104px) minmax(0,1fr);grid-template-rows:1fr;align-items:center;min-height:104px}
+.module-grid.v-det .quest-card .art{grid-column:1;grid-row:1;width:100%;height:100%;min-height:88px;aspect-ratio:auto}
+.module-grid.v-det .quest-card .body{grid-column:2;grid-row:1;padding:12px 44px 12px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.module-grid.v-det .quest-card h3{min-width:0}
+.quest-card .quest-check{top:8px;right:8px}
+.wf-grid,.wf-card,.wf-head,.wf-expander,.wf-title,.wf-name-line,.wf-parts,.wf-part,.wf-drops,.weapon-card,.weapon-card *{min-width:0}
+.wf-title strong,.wf-part-title,.wf-drop,.wf-drop span,.wf-drop small,.weapon-card h3,.weapon-card .desc{overflow-wrap:anywhere}
+.wf-name-line{flex-wrap:wrap;align-items:flex-start}
+.wf-drop{white-space:normal}
+.wf-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))}
+.mods{grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr));align-items:stretch}
+.mod,.mod .info,.mod h2,.mod p{min-width:0;overflow-wrap:anywhere}
+.nav-links,.nav-link,.nav-link span{min-width:0}
+.nav-link span:last-child{white-space:normal;text-align:center;overflow-wrap:anywhere}
+@media(max-width:760px){
+ .mhead .journey-category-tabs{flex:1 1 100%;order:3}
+ .mhead .journey-category-tabs .btn{flex:1 1 auto}
+ .module-grid.v-l{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+ .module-grid.v-det .quest-card{grid-template-columns:76px minmax(0,1fr)}
+ .module-grid.v-det .quest-card .art{min-height:76px}
+}
+@media(max-width:480px){
+ .mhead{gap:8px}
+ .mhead h1{font-size:22px}
+ .mhead .journey-category-tabs{gap:5px}
+ .mhead .journey-category-tabs .btn{font-size:11px;padding:7px 8px}
+ .journey-group{padding:10px}
+ .journey-group .sec-filters .mark-all-box{margin-left:auto!important}
+ .module-grid.v-s{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .module-grid.v-m,.module-grid.v-l{grid-template-columns:1fr}
+ .module-grid.v-det .quest-card{grid-template-columns:64px minmax(0,1fr);min-height:80px}
+ .module-grid.v-det .quest-card .art{min-height:64px}
+ .module-grid.v-det .quest-card .body{padding:8px 34px 8px 8px}
+}
