@@ -1,2 +1,2 @@
-/* Offline fallback. Live data is fetched from /.netlify/functions/warframes. */
+/* Offline fallback. GitHub Actions generates the current data snapshot during deployment. */
 window.WFC_WARFRAMES_SNAPSHOT={items:[],updatedAt:null,source:"offline-snapshot"};
