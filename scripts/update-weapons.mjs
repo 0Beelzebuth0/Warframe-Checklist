@@ -35,34 +35,34 @@ function stripWikiHtml(value){
 function sourcePresentation(source){
  const raw=stripWikiHtml(source),lower=raw.toLowerCase();
  const result={displaySource:raw,sourceKind:"",sourceImageTitle:""};
- const mission=raw.match(/\\b(?:mission|node)\\s+([^,.;]+?)\\s*,\\s*([^.;]+?)(?:[.;]|$)/i);
- const level=raw.match(/\\b(?:level|lvl|lv\\.?)\\s*([0-9]{1,3}(?:\\s*[-–]\\s*[0-9]{1,3})?)/i);
+ const mission=raw.match(/\b(?:mission|node)\s+([^,.;]+?)\s*,\s*([^.;]+?)(?:[.;]|$)/i);
+ const level=raw.match(/\b(?:level|lvl|lv\.?)\s*([0-9]{1,3}(?:\s*[-–]\s*[0-9]{1,3})?)/i);
  const locations=["Plains of Eidolon","Cambion Drift","Orb Vallis","Zariman","Duviri","Cetus","Fortuna","Necralisk","The Entrati","The Zariman","Earth","Venus","Deimos","Lua","Jupiter","Uranus","Saturn","Europa","Neptune","Pluto","Sedna","Ceres","Mars","Mercury","Phobos","Eris","Void"];
  const location=locations.find(name=>lower.includes(name.toLowerCase()))||"";
- if(/\\bbount(?:y|ies)\\b/i.test(raw)){
+ if(/\bbount(?:y|ies)\b/i.test(raw)){
   result.sourceKind="bounty";
-  result.displaySource=[location,level?"Lv. "+level[1].replace(/\\s*[-–]\\s*/,"–"):""].filter(Boolean).join(" · ")||"Bounty";
+  result.displaySource=[location,level?"Lv. "+level[1].replace(/\s*[-–]\s*/,"–"):""].filter(Boolean).join(" · ")||"Bounty";
   result.sourceImageTitle=location||"Bounty";
  }else if(mission){
-  const node=mission[1].trim().replace(/\\s*\\([^)]*\\)\\s*$/,""),planet=mission[2].trim().replace(/\\s*\\([^)]*\\)\\s*$/,"");
+  const node=mission[1].trim().replace(/\s*\([^)]*\)\s*$/,""),planet=mission[2].trim().replace(/\s*\([^)]*\)\s*$/,"");
   result.displaySource=node+", "+planet;
-  const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\\s+(?:the\\s+)?(.+?)\\s+(?:on|during|in|at)\\s+(?:the\\s+)?(?:dark sector\\s+)?mission\\b/i);
-  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim().replace(/\\s+(?:the|a|an)$/i,"");}
- }else if(/\\b(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\\b/i.test(raw)){
-  const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\\s+(?:the\\s+)?(.+?)(?:\\s+(?:on|during|in|at)\\b|[.;]|$)/i);
+  const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\s+(?:the\s+)?(.+?)\s+(?:on|during|in|at)\s+(?:the\s+)?(?:dark sector\s+)?mission\b/i);
+  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim().replace(/\s+(?:the|a|an)$/i,"");}
+ }else if(/\b(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\b/i.test(raw)){
+  const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\s+(?:the\s+)?(.+?)(?:\s+(?:on|during|in|at)\b|[.;]|$)/i);
   if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim();result.displaySource=result.sourceImageTitle;}
- }else if(/\\b(?:container|storage locker|locker|cache|crate|loot box|supply box)\\b/i.test(raw)){
+ }else if(/\b(?:container|storage locker|locker|cache|crate|loot box|supply box)\b/i.test(raw)){
   result.sourceKind="loot";
-  const container=raw.match(/(?:rare|reinforced|normal|common)?\\s*(?:storage\\s+)?(?:container|locker|cache|crate|loot box|supply box)/i);
+  const container=raw.match(/(?:rare|reinforced|normal|common)?\s*(?:storage\s+)?(?:container|locker|cache|crate|loot box|supply box)/i);
   result.sourceImageTitle=container?container[0].trim():"Storage Container";
   result.displaySource=result.sourceImageTitle;
  }
- const price=raw.match(/\\b([0-9][0-9,.]*)\\s*(credits?|platinum|ducats?|standing)\\b/i);
+ const price=raw.match(/\b([0-9][0-9,.]*)\s*(credits?|platinum|ducats?|standing)\b/i);
  if(price){
   result.price=price[1];
   result.currency=price[2].toLowerCase().replace(/s$/,"");
   result.currencyImageTitle=result.currency==="credit"?"Credits":result.currency==="platinum"?"Platinum":result.currency==="ducat"?"Ducats":"Standing";
-  if(!result.displaySource||result.displaySource===raw)result.displaySource=/\\bmarket\\b/i.test(raw)?"Market":raw.split(/[.;]/)[0].trim();
+  if(!result.displaySource||result.displaySource===raw)result.displaySource=/\bmarket\b/i.test(raw)?"Market":raw.split(/[.;]/)[0].trim();
   result.sourceKind="purchase";
  }
  return result;
