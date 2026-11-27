@@ -39,6 +39,7 @@ function sourcePresentation(source){
  const level=raw.match(/\b(?:level|lvl|lv\.?)\s*([0-9]{1,3}(?:\s*[-–]\s*[0-9]{1,3})?)/i);
  const locations=["Plains of Eidolon","Cambion Drift","Orb Vallis","Zariman","Duviri","Cetus","Fortuna","Necralisk","The Entrati","The Zariman","Earth","Venus","Deimos","Lua","Jupiter","Uranus","Saturn","Europa","Neptune","Pluto","Sedna","Ceres","Mars","Mercury","Phobos","Eris","Void"];
  const location=locations.find(name=>lower.includes(name.toLowerCase()))||"";
+ if(location)result.sourceImageTitle=location;
  if(/\bbount(?:y|ies)\b/i.test(raw)){
   result.sourceKind="bounty";
   result.displaySource=[location,level?"Lv. "+level[1].replace(/\s*[-–]\s*/,"–"):""].filter(Boolean).join(" · ")||"Bounty";
@@ -171,13 +172,13 @@ function parseWikiAcquisition(page,weapon){
  const listSource=htmlSection.replace(/<table\b[\s\S]*?<\/table>/gi," ");
  const listLines=[...listSource.matchAll(/<(?:li|p)\b[^>]*>([\s\S]*?)<\/(?:li|p)>/gi)].map(match=>stripWikiHtml(match[1]));
  for(const line of listLines){
-  if(!line)continue;
+  if(!line||/^(?:all drop rates data is obtained|see mission rewards|definitions on reward table rotations)/i.test(line))continue;
   const normalized=normalizeDropName(line);
   let key=/\bblueprint\b/i.test(line)?"blueprint":knownParts.find(part=>normalized.includes(part))||(/\b(Market|Baro Ki'Teer|Syndicate|Dojo|Research|Quest|mission|bounty|vendor|purchased|purchase|event|enemy|drop)\b/i.test(line)?"blueprint":"");
   if(!key)continue;
   const chanceMatch=line.match(/(\d+(?:[.,]\d+)?)\s*%/);
   const chance=chanceMatch?parseChance(chanceMatch[1]):null;
-  add(key,line,"Acquisition (lista/texto da Wiki)",chance);
+  add(key,line,"",chance);
  }
  return result;
 }
@@ -277,6 +278,23 @@ function withMarketPrice(drops,cost){
   return {...drop,price:String(amount),currency:"platinum",currencyImageTitle:"Platinum",sourceKind:"purchase",displaySource:"Market"};
  });
 }
+function cleanAcquisitionDrops(drops){
+ if(!Array.isArray(drops)||!drops.length)return [];
+ const clean=drops.filter(drop=>{
+  const source=String(drop.source||"");
+  const detail=String(drop.detail||"");
+  return !/all drop rates data is obtained|see mission rewards|definitions on reward table rotations/i.test(source)&&
+   !/^acquisition\s*\(lista\/texto da wiki\)$/i.test(detail);
+ });
+ const specificLocation=clean.some(drop=>drop.sourceImageTitle&&drop.displaySource&&!/^bounty$/i.test(drop.displaySource));
+ const seen=new Set();
+ return clean.filter(drop=>{
+  if(specificLocation&&drop.sourceKind==="bounty"&&/^bounty$/i.test(drop.displaySource||""))return false;
+  const key=[normalizeDropName(drop.displaySource||drop.source),drop.chance??"",drop.price??"",normalizeDropName(drop.detail||""),drop.currency||""].join("|");
+  if(seen.has(key))return false;
+  seen.add(key);return true;
+ });
+}
 async function main(){
  const arg=process.argv.indexOf("--output"),output=arg>=0?process.argv[arg+1]:"Content/weapons-data.js";
  if(!output)throw new Error("Informe o caminho de saída.");
@@ -314,14 +332,14 @@ async function main(){
     const compact=normalizeDropName(w.name),suffix=token.toLowerCase().startsWith(compact)?token.slice(compact.length).replace(/([a-z])([A-Z])/g,"$1 $2").trim():"";
     const fallback=displayName(meta),name=suffix?w.name+" "+suffix:(normalizeDropName(fallback).startsWith(compact)?fallback:w.name+" "+fallback);
     const rawPartKey=normalizeDropName(name.replace(w.name,"").trim()),partKey=({gunchassis:"chassis",weaponchassis:"chassis"})[rawPartKey]||rawPartKey;
-    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:withMarketPrice(wikiAcquisition.parts.get(partKey)||[],meta.marketCost)};
+    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:cleanAcquisitionDrops(withMarketPrice(wikiAcquisition.parts.get(partKey)||[],meta.marketCost))};
    });
    items.push({
     id:w.uniqueName,name:w.name,category,
     variant:variantOf(w),isPrime:!!w.isPrime,
     image:w.wikiaThumbnail||(w.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(w.imageName):""),
     wikiUrl:w.wikiaUrl||wikiPage(w.name),description:w.description||"",
-    drops:withMarketPrice(wikiAcquisition.blueprint,w.marketCost),parts
+    drops:cleanAcquisitionDrops(withMarketPrice(wikiAcquisition.blueprint,w.marketCost)),parts
    });
   }
  }
