@@ -367,8 +367,7 @@ function renderModule(host, id, focusKey) {
   const back = WFC.spa ? "#" : WFC.root + "index.html";
   host.innerHTML = `<div class="mhead"><a class="btn" href="${back}">${esc(t("lobby"))}</a><h1>${esc(modTitle(m))}</h1><div class="journey-category-tabs" id="journeyTabs"></div><span class="stat" id="mStat"></span></div>
     <div class="bar"><i id="mBar"></i></div><div class="banner hidden" id="mBan">${esc(t("modDone"))}</div>
-    <div class="tools-block"><div class="search-row wf-tools-row"><input class="search" type="search" placeholder="${esc(t("msearch"))}">
-    </div></div><div class="journey-groups" id="journeyGroups">${groups.map(g => `<section class="journey-group" data-g="${esc(g.id)}">
+    <div class="tools-block"><div class="search-row wf-tools-row journey-search-row"><input class="search" type="search" placeholder="${esc(t("msearch"))}"><div class="vrow module-view-row journey-view-row"></div></div></div><div class="journey-groups" id="journeyGroups">${groups.map(g => `<section class="journey-group" data-g="${esc(g.id)}">
       <div class="journey-group-head"><h2>${esc(g.title ? (g.title[lang] || g.title.en) : "")}</h2><span class="gs"></span></div>
       <div class="sec-filters" data-sg="${esc(g.id)}"><button class="btn on" data-sf="all">${esc(t("fAll"))}</button><button class="btn" data-sf="done">${esc(t("fDone"))}</button><button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
         <button type="button" class="btn journey-order-toggle" data-order-toggle title="Codex / Comunidade"></button><label class="mark-all-box" title="${esc(t("markAllCb"))}"><input type="checkbox" data-ma="${esc(g.id)}" aria-label="${esc(t("markAllCb"))}"></label></div><div class="grid module-grid v-${view}"></div>
