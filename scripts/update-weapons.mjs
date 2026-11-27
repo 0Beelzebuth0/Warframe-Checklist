@@ -32,6 +32,44 @@ function wikiTitle(weapon){
 function stripWikiHtml(value){
  return String(value||"").replace(/<sup[\s\S]*?<\/sup>/gi," ").replace(/<br\s*\/?>/gi," ").replace(/<\/(?:p|li|div|tr|td|th)>/gi," ").replace(/<[^>]*>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g," ").trim();
 }
+function sourcePresentation(source){
+ const raw=stripWikiHtml(source),lower=raw.toLowerCase();
+ const result={displaySource:raw,sourceKind:"",sourceImageTitle:""};
+ const mission=raw.match(/\b(?:mission|node)\s+([^,.;]+?)\s*,\s*([^.;]+?)(?:[.;]|$)/i);
+ const level=raw.match(/\b(?:level|lvl|lv\.?)\s*([0-9]{1,3}(?:\s*[-–]\s*[0-9]{1,3})?)/i);
+ const locations=["Plains of Eidolon","Cambion Drift","Orb Vallis","Zariman","Duviri","Cetus","Fortuna","Necralisk","The Entrati","The Zariman","Earth","Venus","Deimos","Lua","Jupiter","Uranus","Saturn","Europa","Neptune","Pluto","Sedna","Ceres","Mars","Mercury","Phobos","Eris","Void"];
+ const location=locations.find(name=>lower.includes(name.toLowerCase()))||"";
+ if(/\bbount(?:y|ies)\b/i.test(raw)){
+  result.sourceKind="bounty";
+  result.displaySource=[location,level?"Lv. "+level[1].replace(/\s*[-–]\s*/,"–"):""].filter(Boolean).join(" · ")||"Bounty";
+  result.sourceImageTitle=location||"Bounty";
+ }else if(mission){
+  const node=mission[1].trim().replace(/\s*\([^)]*\)\s*$/,""),planet=mission[2].trim().replace(/\s*\([^)]*\)\s*$/,"");
+  result.displaySource=node+", "+planet;
+  const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\s+(?:the\s+)?(.+?)\s+(?:on|during|in|at)\s+(?:the\s+)?(?:dark sector\s+)?mission\b/i);
+  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim().replace(/\s+(?:the|a|an)$/i,"");}
+ }else if(/\b(?:demolisher|eximus|acolyte|sentient|thrax|dax|stalker|kuva guardian|man in the wall)\b/i.test(raw)){
+  const enemy=raw.match(/^(.+?)\s*\(([^,]+),\s*([^)]+)\)/);
+  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim();result.displaySource=enemy[2].trim()+", "+enemy[3].trim();}else{result.sourceKind="enemy";result.sourceImageTitle=raw;result.displaySource=raw;}
+ }else if(/\b(?:container|storage locker|locker|cache|crate|loot box|supply box)\b/i.test(raw)){
+  result.sourceKind="loot";
+  const container=raw.match(/(?:rare|reinforced|normal|common)?\s*(?:storage\s+)?(?:container|locker|cache|crate|loot box|supply box)/i);
+  result.sourceImageTitle=container?container[0].trim():"Storage Container";
+  result.displaySource=result.sourceImageTitle;
+ }else if(/\b(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\b/i.test(raw)){
+  const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\s+(?:the\s+)?(.+?)(?:\s+(?:on|during|in|at)\b|[.;]|$)/i);
+  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim();result.displaySource=result.sourceImageTitle;}
+ }
+ const price=raw.match(/\b([0-9][0-9,.]*)\s*(credits?|platinum|ducats?|standing)\b/i);
+ if(price){
+  result.price=price[1];
+  result.currency=price[2].toLowerCase().replace(/s$/,"");
+  result.currencyImageTitle=result.currency==="credit"?"Credits":result.currency==="platinum"?"Platinum":result.currency==="ducat"?"Ducats":"Standing";
+  if(!result.displaySource||result.displaySource===raw)result.displaySource=/\bmarket\b/i.test(raw)?"Market":raw.split(/[.;]/)[0].trim();
+  result.sourceKind="purchase";
+ }
+ return result;
+}
 function acquisitionHtmlSection(html){
  const source=String(html||"");
  // MediaWiki normally places id="Acquisition" on a nested .mw-headline span,
@@ -59,7 +97,7 @@ function parseWikiAcquisition(page,weapon){
   if(!key||!source)return;
   const target=key==="blueprint"?result.blueprint:(result.parts.get(key)||[]);
   if(!target.some(x=>x.source===source&&x.detail===detail&&x.chance===chance)){
-   const entry={source,chance,detail,sourceUrl:wikiPage(weapon.name)+"#Acquisition"};
+   const entry={source,chance,detail,sourceUrl:wikiPage(weapon.name)+"#Acquisition",...sourcePresentation(source)};
    if(refinementChances)entry.refinementChances=refinementChances;
    target.push(entry);
   }
@@ -212,6 +250,33 @@ function displayName(component){
  if(component?.name)return component.name;
  return String(component?.uniqueName||"").split("/").pop().replace(/Blueprint$/,"").replace(/([a-z])([A-Z])/g,"$1 $2");
 }
+async function enrichDropImages(items){
+ const drops=items.flatMap(item=>[...(item.drops||[]),...(item.parts||[]).flatMap(part=>part.drops||[])]);
+ const titles=[...new Set(drops.flatMap(drop=>[drop.sourceImageTitle,drop.currencyImageTitle]).filter(Boolean))];
+ const imageByTitle=new Map(),batches=[];
+ for(let i=0;i<titles.length;i+=40)batches.push(titles.slice(i,i+40));
+ for(const batch of batches){
+  try{
+   const query=batch.map(title=>encodeURIComponent(title.replace(/ /g,"_"))).join("%7C");
+   const url="https://wiki.warframe.com/api.php?action=query&format=json&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=220&titles="+query;
+   const data=await fetchJson(url);
+   for(const page of Object.values(data.query?.pages||{}))if(page.thumbnail?.source)imageByTitle.set(normalizeDropName(page.title),page.thumbnail.source);
+  }catch(error){console.warn("Não foi possível resolver algumas imagens de aquisição:",error?.message||error);}
+ }
+ for(const drop of drops){
+  if(drop.sourceImageTitle)drop.sourceImage=imageByTitle.get(normalizeDropName(drop.sourceImageTitle))||"";
+  if(drop.currencyImageTitle)drop.currencyImage=imageByTitle.get(normalizeDropName(drop.currencyImageTitle))||"";
+ }
+ console.log("Imagens de fontes de aquisição resolvidas:",drops.filter(drop=>drop.sourceImage).length,"de",drops.filter(drop=>drop.sourceImageTitle).length);
+}
+function withMarketPrice(drops,cost){
+ const amount=Number(cost);
+ if(!Array.isArray(drops)||!Number.isFinite(amount)||amount<=0)return drops||[];
+ return drops.map(drop=>{
+  if(!/market/i.test(drop.source||"")||drop.price)return drop;
+  return {...drop,price:String(amount),currency:"platinum",currencyImageTitle:"Platinum",sourceKind:"purchase",displaySource:"Market"};
+ });
+}
 async function main(){
  const arg=process.argv.indexOf("--output"),output=arg>=0?process.argv[arg+1]:"Content/weapons-data.js";
  if(!output)throw new Error("Informe o caminho de saída.");
@@ -249,17 +314,18 @@ async function main(){
     const compact=normalizeDropName(w.name),suffix=token.toLowerCase().startsWith(compact)?token.slice(compact.length).replace(/([a-z])([A-Z])/g,"$1 $2").trim():"";
     const fallback=displayName(meta),name=suffix?w.name+" "+suffix:(normalizeDropName(fallback).startsWith(compact)?fallback:w.name+" "+fallback);
     const rawPartKey=normalizeDropName(name.replace(w.name,"").trim()),partKey=({gunchassis:"chassis",weaponchassis:"chassis"})[rawPartKey]||rawPartKey;
-    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:wikiAcquisition.parts.get(partKey)||[]};
+    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:withMarketPrice(wikiAcquisition.parts.get(partKey)||[],meta.marketCost)};
    });
    items.push({
     id:w.uniqueName,name:w.name,category,
     variant:variantOf(w),isPrime:!!w.isPrime,
     image:w.wikiaThumbnail||(w.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(w.imageName):""),
     wikiUrl:w.wikiaUrl||wikiPage(w.name),description:w.description||"",
-    drops:wikiAcquisition.blueprint,parts
+    drops:withMarketPrice(wikiAcquisition.blueprint,w.marketCost),parts
    });
   }
  }
+ await enrichDropImages(items);
  const ids=new Set(items.map(x=>x.id));
  const counts=Object.fromEntries(CATEGORIES.map(([f,c])=>[c,items.filter(i=>i.category===c).length]));
  if(items.length<400||ids.size!==items.length||counts.primary<180||counts.secondary<130||counts.melee<200)throw new Error("Validação das armas falhou: "+JSON.stringify(counts));

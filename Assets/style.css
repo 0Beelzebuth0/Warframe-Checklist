@@ -538,3 +538,12 @@ h2.sec{font-size:24px;margin:36px 0 2px}
   .journey-group{padding:12px}
   .journey-group-head h2{font-size:17px}
 }
+
+
+/* Compact acquisition source visuals: enemy, container, bounty and currency artwork. */
+.wf-drop-source{display:flex;align-items:center;gap:9px;min-width:0;overflow-wrap:anywhere}
+.wf-drop-source>span{min-width:0;overflow-wrap:anywhere}
+.wf-drop-source-image{width:42px;height:42px;flex:none;object-fit:contain;border:1px solid var(--line);border-radius:7px;background:#0b111a;padding:2px}
+.wf-drop-price{display:inline-flex;align-items:center;gap:5px;margin:2px 0;color:var(--gold);font-size:13px;font-weight:800}
+.wf-currency-image{width:18px;height:18px;object-fit:contain;flex:none}
+.wf-currency-mark{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;border-radius:50%;background:#263347;color:var(--gold);font-size:13px;line-height:1}
