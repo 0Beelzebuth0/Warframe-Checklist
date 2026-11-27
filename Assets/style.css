@@ -547,3 +547,33 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .wf-drop-price{display:inline-flex;align-items:center;gap:5px;margin:2px 0;color:var(--gold);font-size:13px;font-weight:800}
 .wf-currency-image{width:18px;height:18px;object-fit:contain;flex:none}
 .wf-currency-mark{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;border-radius:50%;background:#263347;color:var(--gold);font-size:13px;line-height:1}
+
+
+/* Weapon details open beside the weapon row on desktop; stack only on narrow screens. */
+@media(min-width:761px){
+ .weapon-card.expanded{
+  display:grid;
+  grid-template-columns:minmax(260px,.38fr) minmax(0,1fr);
+  align-items:stretch;
+  grid-column:1/-1;
+ }
+ .weapon-card.expanded>.wf-head{
+  min-width:0;
+  border-right:1px solid var(--line);
+  align-self:stretch;
+ }
+ .weapon-card.expanded>.weapon-parts{
+  min-width:0;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));
+  align-content:start;
+  border-top:0;
+ }
+ .weapon-card.expanded .weapon-parts .wf-part{
+  border-right:1px solid var(--line);
+  border-bottom:0;
+ }
+}
+@media(max-width:760px){
+ .weapon-card.expanded{display:block}
+ .weapon-card.expanded>.wf-parts{grid-template-columns:1fr}
+}
