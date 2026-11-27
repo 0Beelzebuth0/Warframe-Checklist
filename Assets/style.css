@@ -802,3 +802,7 @@ main{max-width:1500px;padding:30px 26px 90px}
  .module-grid.v-det .quest-card .art{min-height:64px}
  .module-grid.v-det .quest-card .body{padding:8px 34px 8px 8px}
 }
+
+/* Single current-page label in the top bar */
+.page-title{flex:1;min-width:0;color:var(--gold);font-size:clamp(20px,2.6vw,32px);font-weight:750;letter-spacing:.02em;text-transform:uppercase;text-align:center}
+@media(max-width:760px){.wf-nav .brand{padding-right:12px;gap:8px}.brand-mark{font-size:32px}.page-title{font-size:clamp(16px,4vw,24px)}}
