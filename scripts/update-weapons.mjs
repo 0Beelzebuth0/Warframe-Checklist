@@ -48,14 +48,17 @@ function sourcePresentation(source){
   result.displaySource=node+", "+planet;
   const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\s+(?:the\s+)?(.+?)\s+(?:on|during|in|at)\s+(?:the\s+)?(?:dark sector\s+)?mission\b/i);
   if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim().replace(/\s+(?:the|a|an)$/i,"");}
- }else if(/\b(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\b/i.test(raw)){
-  const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\s+(?:the\s+)?(.+?)(?:\s+(?:on|during|in|at)\b|[.;]|$)/i);
-  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim();result.displaySource=result.sourceImageTitle;}
+ }else if(/\b(?:demolisher|eximus|acolyte|sentient|thrax|dax|stalker|kuva guardian|man in the wall)\b/i.test(raw)&&/\([^)]*,[^)]*\)/.test(raw)){
+  const enemy=raw.match(/^(.+?)\s*\(([^,]+),\s*([^)]+)\)/);
+  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim();result.displaySource=enemy[2].trim()+", "+enemy[3].trim();}
  }else if(/\b(?:container|storage locker|locker|cache|crate|loot box|supply box)\b/i.test(raw)){
   result.sourceKind="loot";
   const container=raw.match(/(?:rare|reinforced|normal|common)?\s*(?:storage\s+)?(?:container|locker|cache|crate|loot box|supply box)/i);
   result.sourceImageTitle=container?container[0].trim():"Storage Container";
   result.displaySource=result.sourceImageTitle;
+ }else if(/\b(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\b/i.test(raw)){
+  const enemy=raw.match(/(?:defeat(?:ing)?|kill(?:ing)?|dropped by|drop(?:ped)? from)\s+(?:the\s+)?(.+?)(?:\s+(?:on|during|in|at)\b|[.;]|$)/i);
+  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim();result.displaySource=result.sourceImageTitle;}
  }
  const price=raw.match(/\b([0-9][0-9,.]*)\s*(credits?|platinum|ducats?|standing)\b/i);
  if(price){
