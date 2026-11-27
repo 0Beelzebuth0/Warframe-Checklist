@@ -269,6 +269,14 @@ async function enrichDropImages(items){
  }
  console.log("Imagens de fontes de aquisição resolvidas:",drops.filter(drop=>drop.sourceImage).length,"de",drops.filter(drop=>drop.sourceImageTitle).length);
 }
+function withMarketPrice(drops,cost){
+ const amount=Number(cost);
+ if(!Array.isArray(drops)||!Number.isFinite(amount)||amount<=0)return drops||[];
+ return drops.map(drop=>{
+  if(!/\\bmarket\\b/i.test(drop.source||"")||drop.price)return drop;
+  return {...drop,price:String(amount),currency:"platinum",currencyImageTitle:"Platinum",sourceKind:"purchase",displaySource:"Market"};
+ });
+}
 async function main(){
  const arg=process.argv.indexOf("--output"),output=arg>=0?process.argv[arg+1]:"Content/weapons-data.js";
  if(!output)throw new Error("Informe o caminho de saída.");
@@ -306,14 +314,14 @@ async function main(){
     const compact=normalizeDropName(w.name),suffix=token.toLowerCase().startsWith(compact)?token.slice(compact.length).replace(/([a-z])([A-Z])/g,"$1 $2").trim():"";
     const fallback=displayName(meta),name=suffix?w.name+" "+suffix:(normalizeDropName(fallback).startsWith(compact)?fallback:w.name+" "+fallback);
     const rawPartKey=normalizeDropName(name.replace(w.name,"").trim()),partKey=({gunchassis:"chassis",weaponchassis:"chassis"})[rawPartKey]||rawPartKey;
-    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:wikiAcquisition.parts.get(partKey)||[]};
+    return {name,count:c.itemCount||1,image:meta.wikiaThumbnail||(meta.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(meta.imageName):""),wikiUrl:(w.wikiaUrl||wikiPage(w.name))+"#Acquisition",drops:withMarketPrice(wikiAcquisition.parts.get(partKey)||[],meta.marketCost)};
    });
    items.push({
     id:w.uniqueName,name:w.name,category,
     variant:variantOf(w),isPrime:!!w.isPrime,
     image:w.wikiaThumbnail||(w.imageName?"https://wiki.warframe.com/images/"+encodeURIComponent(w.imageName):""),
     wikiUrl:w.wikiaUrl||wikiPage(w.name),description:w.description||"",
-    drops:wikiAcquisition.blueprint,parts
+    drops:withMarketPrice(wikiAcquisition.blueprint,w.marketCost),parts
    });
   }
  }
