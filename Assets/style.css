@@ -609,3 +609,6 @@ h2.sec{font-size:24px;margin:36px 0 2px}
  .weapon-card .wf-blueprint .wf-drops{width:100%;grid-template-columns:1fr}
  .weapon-card .weapon-details-bar{padding:10px 12px}
 }
+
+/* Hide the card thumbnail while weapon details are expanded; the Blueprint keeps its own image. */
+.weapon-card.expanded .wf-head .wf-image{display:none}
