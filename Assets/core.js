@@ -360,7 +360,8 @@ function renderModule(host, id, focusKey) {
   const groups = m.groups || [{ id: m.items[0] && m.items[0].g }];
   const groupFilters = {};
   let activeGroup = groups.some(g => g.id === lsGet("wfc.journey.category")) ? lsGet("wfc.journey.category") : (groups[0]?.id || ""), journeyOrder = lsGet("wfc.journey.order") || "codex";
-  const communityQuestOrder = ["Awakening","Vor's Prize","The Teacher","Vox Solaris","Once Awake","Heart of Deimos","The Archwing","The Duviri Paradox","Natah","The Second Dream","The War Within","Rising Tide","Chains of Harrow","Apostasy Prologue","The Sacrifice","Chimera Prologue","Erra","The Maker","Prelude to War","The New War","Whispers in the Walls","The Lotus Eaters","The Hex","The Old Peace","Prologue to Tau","Saya's Vigil","Howl of the Kubrow","Stolen Dreams","The New Strange","The Deadlock Protocol","Call of the Tempestarii","The Glast Gambit","Octavia's Anthem","Sands of Inaros","Hidden Messages","Mask of the Revenant","The Silver Grove","The Waverider","The Limbo Theorem","The Jordas Precept","Patient Zero","A Man of Few Words","Jade Shadows","Jade Shadows: Constellations","Angels of the Zariman","Veilbreaker"];
+  const communityQuestOrder = ["Awakening","Vor's Prize","The Teacher","Vox Solaris","Once Awake","The Archwing","Heart of Deimos","The Duviri Paradox","Natah","The Second Dream","The War Within","Rising Tide","Chains of Harrow","Apostasy Prologue","The Sacrifice","Chimera Prologue","Erra","The Maker","Prelude to War","The New War","Whispers in the Walls","The Lotus Eaters","The Hex","The Old Peace","Prologue to Tau","Saya's Vigil","Howl of the Kubrow","Stolen Dreams","The New Strange","The Deadlock Protocol","Call of the Tempestarii","The Glast Gambit","Octavia's Anthem","Sands of Inaros","Hidden Messages","Mask of the Revenant","The Silver Grove","The Waverider","The Limbo Theorem","The Jordas Precept","Patient Zero","A Man of Few Words","Jade Shadows","Jade Shadows: Constellations","Angels of the Zariman","Veilbreaker"];
+  const questPrerequisites = id === "01JOURNEYS" ? {"Vor's Prize":["Awakening"],"The Teacher":["Vor's Prize"],"Vox Solaris":["Vor's Prize"],"Once Awake":["Vor's Prize"],"The Archwing":["Once Awake"],"Heart of Deimos":["The Archwing"],"Natah":["The Archwing"],"The Second Dream":["Natah"],"The War Within":["The Second Dream"],"Rising Tide":["The War Within"],"Chains of Harrow":["The War Within"],"Apostasy Prologue":["The War Within","Chains of Harrow"],"The Sacrifice":["The Second Dream","The War Within","Chains of Harrow","Apostasy Prologue"],"Prelude to War":["The Sacrifice"],"Chimera Prologue":["The Sacrifice"],"Erra":["Chimera Prologue"],"The Maker":["Erra"],"The New War":["The Sacrifice","Prelude to War","The Maker"],"Angels of the Zariman":["The New War"],"Veilbreaker":["The New War"],"Jade Shadows":["The New War"],"Jade Shadows: Constellations":["Jade Shadows"],"Whispers in the Walls":["Heart of Deimos","The New War"],"The Lotus Eaters":["Whispers in the Walls"],"The Hex":["The Lotus Eaters"],"The Old Peace":["The Lotus Eaters"],"Prologue to Tau":["The Hex","The Old Peace"],"The Waverider":["Vox Solaris"],"Stolen Dreams":["The Archwing"],"The New Strange":["Stolen Dreams"],"Octavia's Anthem":["The Second Dream"],"The Silver Grove":["The Second Dream"],"The Glast Gambit":["The War Within"]} : {};
   groups.forEach(g => { groupFilters[g.id] = "all"; });
   if (focusKey) { const targetItem = m.items.find(it => it.key === focusKey); if (targetItem) { activeGroup = targetItem.g; lsSet("wfc.journey.category",activeGroup); } }
   document.title = modTitle(m) + " — " + t("siteTitle");
@@ -368,26 +369,24 @@ function renderModule(host, id, focusKey) {
   host.innerHTML = `<div class="mhead"><a class="btn" href="${back}">${esc(t("lobby"))}</a><h1>${esc(modTitle(m))}</h1><div class="journey-category-tabs" id="journeyTabs"></div><span class="stat" id="mStat"></span></div>
     <div class="bar"><i id="mBar"></i></div><div class="banner hidden" id="mBan">${esc(t("modDone"))}</div>
     <div class="tools-block"><div class="search-row wf-tools-row"><input class="search" type="search" placeholder="${esc(t("msearch"))}">
-      <label class="mark-all-box" for="chkMarkAll"><input type="checkbox" id="chkMarkAll" data-ma="*"><span>${esc(t("markAllCb"))}</span></label>
-    </div></div><div class="vrow module-view-row" id="moduleViewRow"></div>
-    <div class="journey-groups" id="journeyGroups">${groups.map(g => `<section class="journey-group" data-g="${esc(g.id)}">
+    </div></div><div class="journey-groups" id="journeyGroups">${groups.map(g => `<section class="journey-group" data-g="${esc(g.id)}">
       <div class="journey-group-head"><h2>${esc(g.title ? (g.title[lang] || g.title.en) : "")}</h2><span class="gs"></span></div>
-      <div class="sec-filters" data-sg="${esc(g.id)}"><button class="btn on" data-sf="all">${esc(t("fAll"))}</button><button class="btn" data-sf="done">${esc(t("fDone"))}</button><button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
-        <label class="mark-all-box"><input type="checkbox" data-ma="${esc(g.id)}"><span>${esc(t("markAllCb"))}</span></label></div><div class="grid module-grid v-${view}"></div>
+      <div class="sec-filters" data-sg="${esc(g.id)}">${g.id === "main" ? '<div class="vrow module-view-row" id="moduleViewRow"></div>' : ""}<button class="btn on" data-sf="all">${esc(t("fAll"))}</button><button class="btn" data-sf="done">${esc(t("fDone"))}</button><button class="btn" data-sf="pend">${esc(t("fPend"))}</button>
+        <label class="mark-all-box" title="${esc(t("markAllCb"))}"><input type="checkbox" data-ma="${esc(g.id)}" aria-label="${esc(t("markAllCb"))}"></label></div><div class="grid module-grid v-${view}"></div>
     </section>`).join("")}</div>`;
   const tabs = host.querySelector("#journeyTabs"), moduleViewRow = host.querySelector("#moduleViewRow");
   const drawTabs = () => { tabs.innerHTML = groups.map(g => {
     const title = g.title ? (g.title[lang] || g.title.en) : g.id, count = m.items.filter(i => i.g === g.id).length;
     return '<button class="btn'+(g.id===activeGroup?' on':'')+'" data-group="'+esc(g.id)+'">'+esc(title)+' <small>('+count+')</small></button>';
   }).join(""); };
-  const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k)+" "+esc(t(l)); moduleViewRow.appendChild(b); }); };
+  const drawModuleViews = () => { moduleViewRow.innerHTML = ""; VIEWS.forEach(([k,l]) => { const b=document.createElement("button"); b.className="btn"+(k===view?" on":""); b.dataset.view=k; b.setAttribute("aria-pressed",String(k===view)); b.innerHTML=svg(k); b.title=t(l); b.setAttribute("aria-label",t(l)); moduleViewRow.appendChild(b); }); };
   tabs.onclick = e => { const b=e.target.closest("[data-group]"); if(!b)return; activeGroup=b.dataset.group; lsSet("wfc.journey.category",activeGroup); drawTabs(); refresh(); };
   moduleViewRow.onclick = e => { const b=e.target.closest("[data-view]"); if(!b)return; view=b.dataset.view; lsSet(K.view,view); host.querySelectorAll(".module-grid").forEach(g=>g.className="grid module-grid v-"+view); drawModuleViews(); };
   drawTabs(); drawModuleViews();
   if (id === "01JOURNEYS") {
     const toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "btn journey-order-toggle";
     const drawToggle = () => { toggle.textContent = journeyOrder === "community" ? "⇅ Comunidade" : "⇅ Codex"; toggle.setAttribute("aria-pressed", String(journeyOrder === "community")); };
-    drawToggle(); host.querySelector(".search-row").insertBefore(toggle, host.querySelector("#chkMarkAll").closest("label"));
+    drawToggle(); host.querySelector(".search-row").appendChild(toggle);
     toggle.onclick = () => { journeyOrder = journeyOrder === "codex" ? "community" : "codex"; lsSet("wfc.journey.order", journeyOrder); rerender(); };
   }
   const cards = [], displayItems = id === "01JOURNEYS" && journeyOrder === "community" ? [...m.items].sort((a,b) => {
@@ -396,11 +395,18 @@ function renderModule(host, id, focusKey) {
   }) : m.items;
   displayItems.forEach(it => {
     const sec = host.querySelector(`section[data-g="${CSS.escape(it.g)}"]`) || host.querySelector("section.journey-group"), descText = tpl(it.desc).trim();
-    const c = document.createElement("article"); c.className = "card"; c.dataset.key = it.key;
-    c.innerHTML = `<div class="art"><img></div><div class="body"><h3>${esc(it.name)}</h3>${descText ? `<div class="desc">${esc(descText)}</div>` : ""}
-      <div class="row"><button class="chk" aria-pressed="false">${esc(t("check"))}</button><a class="wiki" target="_blank" rel="noopener" href="${wikiPage(it.wiki)}">${esc(t("wiki"))}</a></div></div>`;
+    const c = document.createElement("article"); c.className = "card quest-card"; c.dataset.key = it.key;
+    c.innerHTML = '<button type="button" class="chk quest-check" aria-pressed="false" aria-label="'+esc(t("check"))+'" title="'+esc(t("check"))+'"></button><div class="art"><img></div><div class="body quest-info"><h3>'+esc(it.name)+'</h3><a class="wiki quest-wiki" target="_blank" rel="noopener" href="'+wikiPage(it.wiki)+'">'+esc(t("wiki"))+'</a>'+(descText?'<div class="desc">'+esc(descText)+'</div>':'')+'</div>';
     loadImg(c.querySelector("img"), it.name, it.files);
-    c.querySelector(".chk").onclick = () => { done[it.key] ? delete done[it.key] : (done[it.key] = true); save(); refresh(); };
+    c.querySelector(".chk").onclick = () => {
+      if (done[it.key]) { delete done[it.key]; save(); refresh(); return; }
+      const byName = new Map(m.items.map(item => [item.name,item]));
+      const missing = [], visited = new Set();
+      const collect = name => { if (visited.has(name)) return; visited.add(name); (questPrerequisites[name] || []).forEach(collect); const item=byName.get(name); if(item && !done[item.key]) missing.push(item); };
+      (questPrerequisites[it.name] || []).forEach(collect);
+      if (missing.length) { const names=missing.map(item=>item.name).join(" → "); if (!confirm(t("questSequenceConfirm",{quests:names}))) return; missing.forEach(item=>done[item.key]=true); }
+      done[it.key]=true; save(); refresh();
+    };
     sec.querySelector(".grid").appendChild(c); cards.push([it, c]);
   });
   const scopeItems = g => (g === "*" ? m.items : m.items.filter(i => i.g === g));
@@ -408,7 +414,8 @@ function renderModule(host, id, focusKey) {
     const s = stats(m), nq = norm(q);
     cards.forEach(([it, c]) => {
       const d = !!done[it.key], sf = groupFilters[it.g] || "all";
-      c.classList.toggle("done", d); c.querySelector(".chk").setAttribute("aria-pressed", d);
+      const prereqs=questPrerequisites[it.name]||[], locked=prereqs.some(name=>{const item=m.items.find(x=>x.name===name);return item&&!done[item.key];});
+      c.classList.toggle("quest-locked",locked); c.classList.toggle("done", d); c.querySelector(".chk").setAttribute("aria-pressed", d); c.querySelector(".chk").title=locked?t("questLocked"):t("check");
       const matchGroup = sf === "all" || (sf === "done" && d) || (sf === "pend" && !d), matchSearch = !nq || norm(it.name).includes(nq);
       c.classList.toggle("hidden", !(it.g === activeGroup && matchGroup && matchSearch));
     });
