@@ -98,8 +98,8 @@ function buildTop() {
   const h = $("#topbar");
   h.className = "top";
   const current = location.hash.includes("03WEAPONS") ? "weapons" : location.hash.includes("02WARFRAMES") ? "warframes" : location.hash.includes("01JOURNEYS") ? "journeys" : (document.body.dataset.root ? (location.pathname.includes("03WEAPONS") ? "weapons" : location.pathname.includes("02WARFRAMES") ? "warframes" : "journeys") : "home");
-  const pageKey = current === "home" ? "orbitalTitle" : current === "weapons" ? "navWeapons" : current === "journeys" ? "navJourneys" : "navWarframes";
-  h.innerHTML = `<nav class="nav wf-nav"><a class="brand" href="${WFC.root}index.html"><span class="brand-mark">✥</span><span>WARFRAME<br><b>CHECKLIST</b></span></a><div class="page-title" data-i18n="${pageKey}"></div><div class="nav-tools"><button class="btn icon-tool" id="bExp" title="${esc(t("exp"))}" aria-label="${esc(t("exp"))}">⇧</button><button class="btn icon-tool" id="bImp" title="${esc(t("imp"))}" aria-label="${esc(t("imp"))}">⇩</button><input type="file" id="fImp" accept=".json,application/json" hidden><label class="lang-box"><span data-i18n="language"></span><select id="sLang"></select></label></div></nav>`;
+  const pageKey = current === "weapons" ? "navWeapons" : current === "journeys" ? "navJourneys" : "navWarframes";
+  h.innerHTML = `<nav class="nav wf-nav"><a class="brand" href="${WFC.root}index.html"><span class="brand-mark">✥</span><span>WARFRAME<br><b>CHECKLIST</b></span></a>${current === "home" ? "" : '<div class="page-title" data-i18n="'+pageKey+'"></div>'}<div class="nav-tools"><button class="btn icon-tool" id="bExp" title="${esc(t("exp"))}" aria-label="${esc(t("exp"))}">${esc(t("exp"))}</button><button class="btn icon-tool" id="bImp" title="${esc(t("imp"))}" aria-label="${esc(t("imp"))}">${esc(t("imp"))}</button><input type="file" id="fImp" accept=".json,application/json" hidden><label class="lang-box"><span data-i18n="language"></span><select id="sLang"></select></label></div></nav>`;
   const s = $("#sLang");
   LANGS.forEach(([c, n]) => s.add(new Option(n, c)));
   s.onchange = () => setLang(s.value);
