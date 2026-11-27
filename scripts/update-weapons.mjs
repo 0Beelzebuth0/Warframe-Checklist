@@ -50,7 +50,7 @@ function sourcePresentation(source){
   if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim().replace(/\s+(?:the|a|an)$/i,"");}
  }else if(/\b(?:demolisher|eximus|acolyte|sentient|thrax|dax|stalker|kuva guardian|man in the wall)\b/i.test(raw)){
   const enemy=raw.match(/^(.+?)\s*\(([^,]+),\s*([^)]+)\)/);
-  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim();result.displaySource=enemy[2].trim()+", "+enemy[3].trim();}
+  if(enemy){result.sourceKind="enemy";result.sourceImageTitle=enemy[1].trim();result.displaySource=enemy[2].trim()+", "+enemy[3].trim();}else{result.sourceKind="enemy";result.sourceImageTitle=raw;result.displaySource=raw;}
  }else if(/\b(?:container|storage locker|locker|cache|crate|loot box|supply box)\b/i.test(raw)){
   result.sourceKind="loot";
   const container=raw.match(/(?:rare|reinforced|normal|common)?\s*(?:storage\s+)?(?:container|locker|cache|crate|loot box|supply box)/i);
