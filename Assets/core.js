@@ -263,7 +263,7 @@ function renderWeaponsModule(host, id, focusKey) {
   const categories=[["primary","Primary","Primárias"],["secondary","Secondary","Secundárias"],["melee","Melee","Melee"]];
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
-  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><div class="wep-category-tabs" id="wepTabs"></div><span class="stat" id="wepStat"></span></div><div class="bar"><i id="wepBar"></i></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wepSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-completion="all">'+esc(t("fAll"))+'</button><button class="btn" data-completion="done">'+esc(t("fDone"))+'</button><button class="btn" data-completion="pending">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wepMarkAll"><span>'+esc(t("markAllCb"))+'</span></label></div></div><div class="vrow module-view-row" id="wepViewRow"></div><div class="wf-grid" id="wepGrid"></div><p class="subtle" id="wepNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
+  host.innerHTML='<div class="mhead"><a class="btn" href="'+back+'">'+esc(t("lobby"))+'</a><h1>'+esc(modTitle(m))+'</h1><div class="wep-category-tabs" id="wepTabs"></div><span class="stat" id="wepStat"></span></div><div class="bar"><i id="wepBar"></i></div><div class="tools-block"><div class="search-row wf-tools-row"><input class="search" id="wepSearch" type="search" placeholder="'+esc(t("msearch"))+'"><div class="filter-group"><button class="btn on" data-completion="all">'+esc(t("fAll"))+'</button><button class="btn" data-completion="done">'+esc(t("fDone"))+'</button><button class="btn" data-completion="pending">'+esc(t("fPend"))+'</button></div><label class="mark-all-box wf-mark-all"><input type="checkbox" id="wepMarkAll"><span>'+esc(t("markAllCb"))+'</span></label><button type="button" class="btn wep-expand-all" id="wepExpandAll"></button></div></div><div class="vrow module-view-row" id="wepViewRow"></div><div class="wf-grid" id="wepGrid"></div><p class="subtle" id="wepNoResults" hidden></p><div class="foot">'+esc(t("save"))+'</div>';
   const grid=host.querySelector("#wepGrid"),tabs=host.querySelector("#wepTabs"),viewRow=host.querySelector("#wepViewRow");
   const items=m.items,cards=new Map();
   const currentItems=()=>items.filter(i=>i.category===category);
@@ -307,6 +307,7 @@ function renderWeaponsModule(host, id, focusKey) {
     cards.set(item.id,c);return c;
   }
   items.forEach(i=>grid.appendChild(makeCard(i)));
+  const expandLabels={en:["Expand all","Collapse all"],pt:["Expandir tudo","Recolher tudo"],es:["Expandir todo","Contraer todo"],fr:["Tout développer","Tout réduire"],de:["Alle erweitern","Alle reduzieren"],ru:["Развернуть все","Свернуть все"],ja:["すべて展開","すべて折りたたむ"],zh:["全部展开","全部收起"],ko:["모두 펼치기","모두 접기"],it:["Espandi tutto","Riduci tutto"]};
   function refresh(){
     const s=stats(m),p=pct(s.d,s.t),nq=norm(q),scope=currentItems().filter(i=>!primeOnly||i.isPrime);
     host.querySelector("#wepStat").textContent=t("cDone",{d:s.d,t:s.t})+" · "+p+"%";
@@ -321,6 +322,11 @@ function renderWeaponsModule(host, id, focusKey) {
       c.querySelector(".wf-title .bar i").style.width=(isDone?100:0)+"%";
     });
     host.querySelector("#wepNoResults").hidden=visible>0;
+    const visibleCards=scope.filter(i=>{const isDone=!!done[i.key];return (completion==="all"||(completion==="done"&&isDone)||(completion==="pending"&&!isDone))&&(!nq||norm(i.name).includes(nq));});
+    const expandButton=host.querySelector("#wepExpandAll");
+    const allExpanded=visibleCards.length>0&&visibleCards.every(i=>cards.get(i.id).classList.contains("expanded"));
+    expandButton.textContent=(expandLabels[lang]||expandLabels.en)[allExpanded?1:0];
+    expandButton.setAttribute("aria-label",expandButton.textContent);
     const keys=scope.map(i=>i.key),count=keys.filter(k=>done[k]).length,box=host.querySelector("#wepMarkAll");
     box.checked=keys.length>0&&count===keys.length;box.indeterminate=count>0&&count<keys.length;
   }
@@ -328,6 +334,15 @@ function renderWeaponsModule(host, id, focusKey) {
   viewRow.onclick=e=>{const b=e.target.closest("[data-view]");if(!b)return;view=b.dataset.view;lsSet(K.view,view);grid.className="wf-grid v-"+view;drawViews();};
   host.querySelector("#wepSearch").oninput=e=>{q=e.target.value;refresh();};
   host.querySelectorAll("[data-completion]").forEach(b=>b.onclick=()=>{completion=b.dataset.completion;refresh();});
+  host.querySelector("#wepExpandAll").onclick=()=>{
+    const nq=norm(q),visibleItems=currentItems().filter(i=>(!primeOnly||i.isPrime)&&(completion==="all"||(completion==="done"&&!!done[i.key])||(completion==="pending"&&!done[i.key]))&&(!nq||norm(i.name).includes(nq)));
+    const shouldExpand=visibleItems.some(i=>!cards.get(i.id).classList.contains("expanded"));
+    visibleItems.forEach(i=>{
+      const card=cards.get(i.id),btn=card.querySelector("[data-expand]"),parts=card.querySelector(".weapon-parts");
+      card.classList.toggle("expanded",shouldExpand);btn.setAttribute("aria-expanded",String(shouldExpand));parts.hidden=!shouldExpand;
+    });
+    refresh();
+  };
   host.querySelector("#wepMarkAll").onchange=()=>{
     const keys=currentItems().filter(i=>!primeOnly||i.isPrime).map(i=>i.key),any=keys.some(k=>done[k]);
     if(confirm(t(any?"confUnmarkAll":"confMarkAll"))){keys.forEach(k=>{if(any)delete done[k];else done[k]=true;});save();}
