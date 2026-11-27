@@ -635,7 +635,8 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .journey-group .sec-filters{gap:8px}
 .journey-group .module-view-row{order:0;flex:0 0 auto}
 .journey-group .sec-filters>[data-sf]{order:1}
-.journey-group .sec-filters .mark-all-box{order:2;margin-left:auto}
+.journey-group .sec-filters .journey-order-toggle{order:2;flex:none;padding:0 10px;white-space:nowrap}
+.journey-group .sec-filters .mark-all-box{order:3;margin-left:0}
 .quest-card{position:relative}
 .quest-card .quest-check{position:absolute;top:10px;right:10px;z-index:5;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:8px;font-size:0;gap:0}
 .quest-card .quest-check:hover{background:#0b111a99;border-color:transparent}
@@ -644,7 +645,7 @@ h2.sec{font-size:24px;margin:36px 0 2px}
 .quest-card .quest-info{min-width:0}
 .quest-card .quest-wiki{display:inline-block;align-self:flex-start;margin:0 0 3px;font-size:12px;color:var(--gold);white-space:normal}
 .quest-card .quest-wiki:hover{text-decoration:underline}
-.quest-card.quest-locked .art img,.quest-card.quest-locked .quest-info h3,.quest-card.quest-locked .quest-info .desc,.quest-card.quest-locked .quest-info .quest-wiki{filter:blur(4px);opacity:.58;transition:filter .15s,opacity .15s}
+
 .module-grid.v-det .quest-card .body{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
 .module-grid.v-det .quest-card h3{min-width:0}
 .module-grid.v-det .quest-card .quest-wiki{margin:0}
@@ -655,6 +656,7 @@ h2.sec{font-size:24px;margin:36px 0 2px}
  .journey-group .sec-filters .mark-all-box{margin-left:auto}
  .journey-group .module-view-row{flex:1 1 100%;order:0}
  .journey-group .sec-filters>[data-sf]{order:1}
- .journey-group .sec-filters .mark-all-box{order:2}
+ .journey-group .sec-filters .journey-order-toggle{order:2}
+ .journey-group .sec-filters .mark-all-box{order:3}
  .quest-card .quest-check{top:8px;right:8px}
 }
