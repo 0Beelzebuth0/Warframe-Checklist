@@ -308,7 +308,7 @@ function renderWeaponsModule(host, id, focusKey) {
   }
   items.forEach(i=>grid.appendChild(makeCard(i)));
   function refresh(){
-    const s=stats(m),p=pct(s.d,s.t),nq=norm(q),scope=currentItems();
+    const s=stats(m),p=pct(s.d,s.t),nq=norm(q),scope=currentItems().filter(i=>!primeOnly||i.isPrime);
     host.querySelector("#wepStat").textContent=t("cDone",{d:s.d,t:s.t})+" · "+p+"%";
     host.querySelector("#wepBar").style.width=p+"%";
     host.querySelectorAll("[data-completion]").forEach(b=>b.classList.toggle("on",b.dataset.completion===completion));
