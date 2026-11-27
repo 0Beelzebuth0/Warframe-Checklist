@@ -273,7 +273,7 @@ function withMarketPrice(drops,cost){
  const amount=Number(cost);
  if(!Array.isArray(drops)||!Number.isFinite(amount)||amount<=0)return drops||[];
  return drops.map(drop=>{
-  if(!/\\bmarket\\b/i.test(drop.source||"")||drop.price)return drop;
+  if(!/market/i.test(drop.source||"")||drop.price)return drop;
   return {...drop,price:String(amount),currency:"platinum",currencyImageTitle:"Platinum",sourceKind:"purchase",displaySource:"Market"};
  });
 }
