@@ -259,7 +259,7 @@ function renderWarframesModule(host, id, focusKey) {
 
 function renderWeaponsModule(host, id, focusKey) {
   const m=WFC.mods[id]; if(!m)return;
-  let q="", category="primary", completion="all", view=VIEWS.some(v=>v[0]===lsGet(K.view))?lsGet(K.view):"m";
+  let q="", category="primary", completion="all", primeOnly=false, view=VIEWS.some(v=>v[0]===lsGet(K.view))?lsGet(K.view):"m";
   const categories=[["primary","Primary","Primárias"],["secondary","Secondary","Secundárias"],["melee","Melee","Melee"]];
   document.title=modTitle(m)+" — "+t("siteTitle");
   const back=WFC.spa?"#":WFC.root+"index.html";
@@ -267,7 +267,7 @@ function renderWeaponsModule(host, id, focusKey) {
   const grid=host.querySelector("#wepGrid"),tabs=host.querySelector("#wepTabs"),viewRow=host.querySelector("#wepViewRow");
   const items=m.items,cards=new Map();
   const currentItems=()=>items.filter(i=>i.category===category);
-  function drawTabs(){tabs.innerHTML=categories.map(([id,en,pt])=>'<button class="btn'+(id===category?' on':'')+'" data-category="'+id+'">'+(lang==="pt"?pt:en)+'</button>').join("");}
+  function drawTabs(){tabs.innerHTML=categories.map(([id,en,pt])=>'<button class="btn'+(id===category?' on':'')+'" data-category="'+id+'">'+(lang==="pt"?pt:en)+'</button>').join("")+'<button class="btn wep-prime-filter'+(primeOnly?' on':'')+'" data-prime-filter aria-pressed="'+String(primeOnly)+'">Prime</button>';}
   function drawViews(){viewRow.innerHTML="";VIEWS.forEach(([k,l])=>{const b=document.createElement("button");b.className="btn"+(k===view?" on":"");b.dataset.view=k;b.innerHTML=svg(k)+" "+esc(t(l));viewRow.appendChild(b);});}
   function dropRows(drops,weaponName){
     return Array.isArray(drops)&&drops.length?drops.map(d=>{
@@ -283,13 +283,16 @@ function renderWeaponsModule(host, id, focusKey) {
     }).join(""):'<div class="wf-drop wf-unknown">'+esc(t("wfNoDrop"))+'</div>';
   }
   function makeCard(item){
-    const c=document.createElement("article");c.className="wf-card weapon-card";c.dataset.weapon=item.id;
+    const c=document.createElement("article");c.className="wf-card weapon-card"+(item.isPrime?" is-prime":"");c.dataset.weapon=item.id;
     const parts=Array.isArray(item.parts)?item.parts:[];
     const partHtml=parts.map((part,index)=>'<section class="wf-part"><div class="wf-part-title"><img class="wf-part-image" data-part-image="'+index+'" alt="'+esc(part.name)+'" loading="lazy"><span>'+esc(part.name)+(part.count>1?' ×'+esc(part.count):"")+'</span></div><a class="wf-part-wiki" href="'+esc(part.wikiUrl||item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a><div class="wf-drops'+((part.drops||[]).length>3?' has-many':'')+'">'+dropRows(part.drops,item.name)+'</div></section>').join("");
-    const blueprint='<section class="wf-part"><div class="wf-part-title">'+(lang==="pt"?"Aquisição principal":"Main Acquisition")+'</div><div class="wf-drops'+((item.drops||[]).length>3?' has-many':'')+'">'+dropRows(item.drops,item.name)+'</div></section>';
-    c.innerHTML='<div class="wf-head"><button type="button" class="wf-expander" data-expand="'+esc(item.id)+'" aria-expanded="false"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener" aria-label="'+esc(t("wiki"))+'">↗ '+esc(t("wiki"))+'</a></span><small class="wf-count">'+(item.variant?esc(item.variant):"")+'</small><span class="bar sm"><i></i></span></span><span class="wf-chevron" aria-hidden="true">›</span></button><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div><div class="wf-parts weapon-parts" hidden>'+blueprint+partHtml+'</div>';
+    const blueprint='<section class="wf-part wf-blueprint"><div class="wf-part-title"><img class="wf-part-image wf-blueprint-image" alt="'+esc(item.name)+'" loading="lazy"><span>Blueprint</span></div><div class="wf-drops'+((item.drops||[]).length>3?' has-many':'')+'">'+dropRows(item.drops,item.name)+'</div></section>';
+    const detailsBar='<div class="weapon-details-bar"><div class="weapon-details-name"><strong>'+esc(item.name)+'</strong><a href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener">'+esc(t("wiki"))+'</a></div><label class="wf-master-check" title="'+esc(t("check"))+'"><input type="checkbox" data-weapon="'+esc(item.key)+'" aria-label="'+esc(t("check"))+' '+esc(item.name)+'"><span></span></label></div>';
+    c.innerHTML='<div class="wf-head"><button type="button" class="wf-expander" data-expand="'+esc(item.id)+'" aria-expanded="false"><img class="wf-image" alt="'+esc(item.name)+'" loading="lazy"><span class="wf-title"><span class="wf-name-line"><strong>'+esc(item.name)+'</strong><a class="wf-wiki" href="'+esc(item.wikiUrl||wikiPage(item.name))+'" target="_blank" rel="noopener" aria-label="'+esc(t("wiki"))+'">↗ '+esc(t("wiki"))+'</a></span><span class="bar sm"><i></i></span></span><span class="wf-chevron" aria-hidden="true">›</span></button></div><div class="wf-parts weapon-parts" hidden>'+detailsBar+blueprint+partHtml+'</div>';
     const img=c.querySelector(".wf-image");
     if(item.image){img.src=item.image;img.onerror=()=>loadImg(img,item.name,[],item.name);}else loadImg(img,item.name,[],item.name);
+    const blueprintImg=c.querySelector(".wf-blueprint-image");
+    if(item.image){blueprintImg.src=item.image;blueprintImg.onerror=()=>loadImg(blueprintImg,item.name,[],item.name);}else loadImg(blueprintImg,item.name,[],item.name);
     c.querySelectorAll("[data-part-image]").forEach(el=>{
       const part=parts[Number(el.dataset.partImage)];
       if(part.image){el.src=part.image;el.onerror=()=>loadImg(el,part.name,[],part.name);}else loadImg(el,part.name,[],part.name);
@@ -305,14 +308,14 @@ function renderWeaponsModule(host, id, focusKey) {
   }
   items.forEach(i=>grid.appendChild(makeCard(i)));
   function refresh(){
-    const s=stats(m),p=pct(s.d,s.t),nq=norm(q),scope=currentItems();
+    const s=stats(m),p=pct(s.d,s.t),nq=norm(q),scope=currentItems().filter(i=>!primeOnly||i.isPrime);
     host.querySelector("#wepStat").textContent=t("cDone",{d:s.d,t:s.t})+" · "+p+"%";
     host.querySelector("#wepBar").style.width=p+"%";
     host.querySelectorAll("[data-completion]").forEach(b=>b.classList.toggle("on",b.dataset.completion===completion));
     let visible=0;
     items.forEach(i=>{
       const c=cards.get(i.id),isDone=!!done[i.key];
-      const matches=i.category===category&&(completion==="all"||(completion==="done"&&isDone)||(completion==="pending"&&!isDone))&&(!nq||norm(i.name).includes(nq));
+      const matches=i.category===category&&(!primeOnly||i.isPrime)&&(completion==="all"||(completion==="done"&&isDone)||(completion==="pending"&&!isDone))&&(!nq||norm(i.name).includes(nq));
       c.hidden=!matches;if(matches)visible++;
       c.classList.toggle("done",isDone);c.querySelector("[data-weapon]").checked=isDone;
       c.querySelector(".wf-title .bar i").style.width=(isDone?100:0)+"%";
@@ -321,12 +324,12 @@ function renderWeaponsModule(host, id, focusKey) {
     const keys=scope.map(i=>i.key),count=keys.filter(k=>done[k]).length,box=host.querySelector("#wepMarkAll");
     box.checked=keys.length>0&&count===keys.length;box.indeterminate=count>0&&count<keys.length;
   }
-  tabs.onclick=e=>{const b=e.target.closest("[data-category]");if(!b)return;category=b.dataset.category;drawTabs();refresh();};
+  tabs.onclick=e=>{const b=e.target.closest("[data-category]");if(b){category=b.dataset.category;drawTabs();refresh();return;}if(e.target.closest("[data-prime-filter]")){primeOnly=!primeOnly;drawTabs();refresh();}};
   viewRow.onclick=e=>{const b=e.target.closest("[data-view]");if(!b)return;view=b.dataset.view;lsSet(K.view,view);grid.className="wf-grid v-"+view;drawViews();};
   host.querySelector("#wepSearch").oninput=e=>{q=e.target.value;refresh();};
   host.querySelectorAll("[data-completion]").forEach(b=>b.onclick=()=>{completion=b.dataset.completion;refresh();});
   host.querySelector("#wepMarkAll").onchange=()=>{
-    const keys=currentItems().map(i=>i.key),any=keys.some(k=>done[k]);
+    const keys=currentItems().filter(i=>!primeOnly||i.isPrime).map(i=>i.key),any=keys.some(k=>done[k]);
     if(confirm(t(any?"confUnmarkAll":"confMarkAll"))){keys.forEach(k=>{if(any)delete done[k];else done[k]=true;});save();}
     refresh();
   };
